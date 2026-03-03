@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "signIn": "Logg inn",
+    "getStarted": "Kom i gang"
+  },
+  "home": {
+    "badge": "Nå tilgjengelig på norsk og engelsk",
+    "headline": "Bygg med sikkerhet.",
+    "subheading": "Bricks hjelper byggefirmaer, arkitekter og ingeniører med å lage dokumentasjon som oppfyller kommunale regler og lovkrav — med AI-drevne samsvarskontroller innebygd.",
+    "cta": {
+      "primary": "Start gratis",
+      "secondary": "Se hvordan det fungerer"
+    }
+  }
+}
