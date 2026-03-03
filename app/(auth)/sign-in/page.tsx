@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signIn, type AuthState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,8 @@ const initialState: AuthState = {};
 
 export default function SignInPage() {
   const [state, formAction, pending] = useActionState(signIn, initialState);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
 
   return (
     <Card>
@@ -31,6 +34,9 @@ export default function SignInPage() {
 
       <form action={formAction}>
         <CardContent className="space-y-4">
+          {redirectTo && (
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+          )}
           {state.error && (
             <p role="alert" className="text-sm text-destructive">
               {state.error}

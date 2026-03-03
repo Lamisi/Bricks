@@ -32,10 +32,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Redirect unauthenticated users away from protected routes.
+  // Preserve the original path so invite links survive the sign-in redirect.
   const isProtectedRoute = pathname.startsWith("/app");
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
+    const redirectTo = pathname + request.nextUrl.search;
     url.pathname = "/sign-in";
+    url.searchParams.set("redirectTo", redirectTo);
     return NextResponse.redirect(url);
   }
 
@@ -43,8 +46,10 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute =
     pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
   if (isAuthRoute && user) {
+    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
     const url = request.nextUrl.clone();
-    url.pathname = "/app";
+    url.pathname = redirectTo ?? "/app";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
