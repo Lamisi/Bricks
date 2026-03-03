@@ -13,127 +13,168 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Framework | Next.js 14+ (App Router, TypeScript) |
 | Styling | Tailwind CSS + shadcn/ui |
 | Backend / DB | Supabase (PostgreSQL + Auth + Storage + Realtime) |
-| Vector search | pgvector (via Supabase) |
-| AI | Claude API via Vercel AI SDK (`@ai-sdk/anthropic`) |
+| Vector search | pgvector extension (via Supabase) |
+| AI model | Claude API (`claude-sonnet-4-6` default) |
+| AI SDK | Vercel AI SDK (`ai` + `@ai-sdk/anthropic`) |
 | RAG | LlamaIndex or LangChain + pgvector |
-| i18n | next-intl (Norwegian Bokmål + English, extensible) |
-| Deployment | Vercel |
+| Rich-text editor | Tiptap |
+| i18n | next-intl (Norwegian Bokmål `no`, English `en`) |
+| Deployment | Vercel (frontend + API routes) + Supabase (hosted) |
 
 ## Commands
 
-> Commands will be added here once the project is scaffolded (issue #1).
+> To be populated after issue #1 (project scaffold) is merged. Expected commands:
 
-## Architecture Overview
-
-### High-level shape
-
-```
-Browser (Next.js App Router)
-    │
-    ├── Supabase Auth        — authentication + role enforcement (RLS)
-    ├── Supabase Storage     — document files, images, diagrams
-    ├── Supabase Realtime    — live comments, notifications, presence
-    │
-    └── Next.js API Routes
-            ├── /api/ai/*    — Claude API calls, streaming responses
-            ├── /api/rag/*   — RAG pipeline (ingest + similarity search)
-            └── /api/webhooks/* — inbound/outbound external integrations
+```bash
+npm run dev        # Start development server
+npm run build      # Production build
+npm run lint       # ESLint
+npm run typecheck  # TypeScript type checking
 ```
 
-### Key domain concepts
+## Folder Structure
 
-- **Organization** — a construction firm or practice
-- **Project** — a construction project, owned by an organization, grouping all related documents and members
-- **Document** — a unit of work (proposal, drawing, report). Always has at least one version.
-- **Document Version** — immutable snapshot of a document at a point in time. Approval locks a version.
-- **Knowledge Source** — an external legal doc, city code, or specification ingested into the RAG pipeline
+> To be confirmed after issue #1. Planned layout:
 
-### Roles (per project)
+```
+app/                        # Next.js App Router
+  [locale]/                 # i18n locale wrapper (no / en)
+    (auth)/                 # Sign in, sign up pages
+    (app)/                  # Authenticated app shell
+      dashboard/
+      projects/[id]/
+      documents/[id]/
+      admin/
+  api/
+    ai/                     # Claude API routes (streaming)
+    rag/                    # Ingestion + similarity search
+    webhooks/               # Inbound integration events
+components/                 # Shared UI components
+lib/
+  supabase/                 # server.ts, client.ts, middleware.ts
+  ai/                       # Claude wrappers, RAG utilities, prompts
+  hooks/                    # useRole, useCurrentUser, etc.
+types/                      # Shared TypeScript types and enums
+messages/                   # i18n translation files
+  no.json
+  en.json
+supabase/
+  migrations/               # SQL migration files (Supabase CLI)
+```
 
-| Role | Permissions |
+## Domain Model
+
+```
+Organization
+  └── Project (has many Members with roles)
+        └── Document (has many Versions)
+              └── DocumentVersion (immutable snapshot)
+                    ├── Comments
+                    └── ComplianceCheck (AI result)
+
+KnowledgeSource → Embeddings (pgvector) — powers RAG
+```
+
+## Roles (per project)
+
+| Role | Key permissions |
 |---|---|
-| `admin` | Full access, invite members, manage settings |
+| `admin` | Full access, invite members, manage settings, approve documents |
 | `architect` | Create, upload, edit documents; submit for review |
-| `civil_engineer` | Review and comment; approve or request changes |
+| `civil_engineer` | Review, comment, approve or request changes |
 | `carpenter` | Read-only access to approved documents |
 
-Role checks happen **server-side** via Supabase Row Level Security (RLS). Frontend role checks (`useRole`) are for UI only — never trust them for security.
+**Rule:** Role checks are enforced server-side via Supabase RLS. Frontend `useRole` checks are UI-only — never rely on them for security.
 
-### Document lifecycle
+## Document Lifecycle
 
 ```
 Draft → In Review → Approved / Changes Requested → Submitted (to authorities)
 ```
 
-An approved version is immutable. Further edits require creating a new version.
+- An **approved** version is immutable. Further edits require creating a new version.
+- Every status transition is logged with a timestamp and the actor's user ID.
 
-### AI architecture
+## AI Architecture
 
-- **Compliance check** — triggered on document upload/submission. Extracts document text, retrieves relevant legal chunks via pgvector similarity search, sends to Claude for structured issue identification.
-- **Improvement suggestions** — on-demand, streaming. Claude reads the document and suggests missing sections, unclear language, or non-compliant clauses.
-- **Document generation** — user fills a wizard, Claude generates a structured draft which opens in the rich-text editor.
-- All AI prompts are language-aware (respond in the user's selected locale).
+All AI features use the Claude API via the Vercel AI SDK. Entry point: `app/api/ai/`.
 
-### i18n
+| Feature | Trigger | How it works |
+|---|---|---|
+| Compliance check | On upload / submit for review | Extract text → RAG similarity search → Claude structured output → store in `compliance_checks` |
+| Improvement suggestions | On-demand (button) | Document text + RAG context → Claude streaming response |
+| Document generation | Wizard form submission | User inputs → Claude streaming → opens in Tiptap editor |
 
-- Locale routing: `/no/...` and `/en/...`
+**RAG pipeline:** Legal PDFs / city codes are chunked, embedded, and stored in the `embeddings` table (pgvector). Retrieval uses a `match_documents` Supabase RPC function. Sources are tagged with language (`no` / `en`).
+
+**Language awareness:** All Claude prompts include the user's locale and instruct Claude to respond in that language.
+
+## i18n
+
+- Locale routing: `/no/...` and `/en/...` via next-intl
 - Translation files: `messages/no.json`, `messages/en.json`
-- Language preference stored on the user's `profiles` row in Supabase
+- Language preference stored on `profiles.language` in Supabase
+- To add a new language: add a new `messages/{locale}.json` and register the locale in next-intl config
 
-## Database Schema (planned)
+## Database Tables
 
-> Full migrations will live in `supabase/migrations/`. This is the logical overview.
+Full migrations live in `supabase/migrations/`. Logical overview:
 
-- `profiles` — extends `auth.users` (name, avatar, language)
-- `organizations` — firms and practices
-- `projects` — construction projects (name, description, location, status)
-- `project_members` — user ↔ project with role
-- `documents` — document metadata (title, type, project_id, current_version_id, status)
-- `document_versions` — immutable snapshots (file_path or rich-text JSON, version_number, change_summary)
-- `comments` — on a specific `document_version`, supports threading and resolution
-- `compliance_checks` — AI compliance results per document version
-- `knowledge_sources` — ingested legal docs/specs
-- `embeddings` — chunked text + pgvector embeddings from knowledge sources
-- `notifications` — in-app notifications per user
-- `integrations` — external system configs (webhook URLs, API keys)
+| Table | Purpose |
+|---|---|
+| `profiles` | Extends `auth.users` — name, avatar, language |
+| `organizations` | Construction firms / practices |
+| `projects` | Construction projects — name, location, status |
+| `project_members` | User ↔ project join with role |
+| `documents` | Document metadata — title, type, status, current version |
+| `document_versions` | Immutable snapshots — file path or rich-text JSON, version number |
+| `comments` | Threaded comments on a document version |
+| `compliance_checks` | AI compliance results per document version |
+| `knowledge_sources` | Ingested legal docs / specs |
+| `embeddings` | Chunked text + pgvector vectors from knowledge sources |
+| `notifications` | In-app notifications per user |
+| `integrations` | External system configs — webhook URLs, API keys |
 
-## Key file paths
+## Environment Variables
 
-> Will be populated as the codebase is scaffolded. Expected structure:
+See `.env.example` for the full list. Key variables:
 
 ```
-app/                    # Next.js App Router pages and layouts
-components/             # Shared UI components
-lib/
-  supabase/             # Supabase client helpers (server + client)
-  ai/                   # Claude API wrappers, RAG utilities
-types/                  # Shared TypeScript types
-messages/               # i18n translation files (no.json, en.json)
-supabase/
-  migrations/           # SQL migration files
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY     # Server only — never expose to client
+ANTHROPIC_API_KEY              # Server only — never expose to client
 ```
 
-## Build order (GitHub issues)
+## Key Conventions
 
-Issues are numbered in the intended build sequence:
+- **Never expose** `SUPABASE_SERVICE_ROLE_KEY` or `ANTHROPIC_API_KEY` to the client bundle.
+- **Always** use signed Supabase Storage URLs with short expiry for file access — never public bucket URLs.
+- **RLS is the source of truth** for authorization — API routes must also check roles server-side.
+- **Every PR** that introduces an architectural change must update this file.
+- Migrations are applied via the Supabase CLI (`supabase db push`) — never edit the database manually in production.
 
-1. Next.js scaffold
-2. Supabase connection
-3. Database schema
-4. Authentication
-5. Role-based access control
-6. Project management
-7. Document upload + versioning
-8. Document viewer
-9. Rich-text editor
-10. Comments
-11. Review/approval workflow
-12. Claude API setup
-13. RAG pipeline
-14. AI compliance check
-15. AI suggestions
-16. AI document generation
-17. i18n (Norwegian + English)
-18. External integrations framework
-19. Notifications
-20. Search
+## Build Order (GitHub Issues)
+
+| # | Area | Issue |
+|---|---|---|
+| 1 | Foundation | Next.js scaffold |
+| 2 | Foundation | Supabase connection |
+| 3 | Foundation | Database schema |
+| 4 | Auth | Authentication |
+| 5 | Auth | Role-based access control |
+| 6 | Documents | Project management |
+| 7 | Documents | Document upload + versioning |
+| 8 | Documents | Document viewer |
+| 9 | Documents | Rich-text editor |
+| 10 | Collaboration | Comments |
+| 11 | Collaboration | Review / approval workflow |
+| 12 | AI | Claude API setup |
+| 13 | AI | RAG pipeline |
+| 14 | AI | Compliance check |
+| 15 | AI | Improvement suggestions |
+| 16 | AI | Document generation |
+| 17 | i18n | Norwegian + English |
+| 18 | Integrations | Webhooks + external API |
+| 19 | Collaboration | Notifications |
+| 20 | Search | Full-text + semantic search |
