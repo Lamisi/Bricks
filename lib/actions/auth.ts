@@ -64,7 +64,8 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
-  redirect("/app");
+  const redirectTo = formData.get("redirectTo") as string | null;
+  redirect(redirectTo ?? "/app");
 }
 
 export async function signOut(): Promise<void> {
