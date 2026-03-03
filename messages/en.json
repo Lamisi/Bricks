@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "signIn": "Sign in",
+    "getStarted": "Get started"
+  },
+  "home": {
+    "badge": "Now available in Norwegian and English",
+    "headline": "Build with certainty.",
+    "subheading": "Bricks helps construction companies, architects, and engineers create documentation that meets city codes and legal requirements — with AI-powered compliance checks built in.",
+    "cta": {
+      "primary": "Start for free",
+      "secondary": "See how it works"
+    }
+  }
+}

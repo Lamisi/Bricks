@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 36" fill="none" aria-label="Bricks logo mark">
+  <!-- Row 1: two bricks -->
+  <rect x="0" y="0" width="22" height="9" rx="1.5" fill="#C45C3A"/>
+  <rect x="25" y="0" width="22" height="9" rx="1.5" fill="#C45C3A"/>
+  <!-- Row 2: three offset bricks -->
+  <rect x="0" y="13" width="10" height="9" rx="1.5" fill="#0F2D5E"/>
+  <rect x="13" y="13" width="22" height="9" rx="1.5" fill="#0F2D5E"/>
+  <rect x="38" y="13" width="10" height="9" rx="1.5" fill="#0F2D5E"/>
+  <!-- Row 3: two bricks -->
+  <rect x="0" y="27" width="22" height="9" rx="1.5" fill="#C45C3A"/>
+  <rect x="25" y="27" width="22" height="9" rx="1.5" fill="#C45C3A"/>
+</svg>

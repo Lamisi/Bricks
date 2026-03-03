@@ -23,15 +23,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-> To be populated after issue #1 (project scaffold) is merged. Expected commands:
-
 ```bash
-npm run dev        # Start development server
-npm run build      # Production build
-npm run lint       # ESLint
-npm run typecheck  # TypeScript type checking
+npm run dev          # Start development server (http://localhost:3000)
+npm run build        # Production build
+npm run lint         # ESLint (uses node_modules/eslint/bin/eslint.js directly — Node v25 workaround)
+npm run typecheck    # TypeScript check (uses node_modules/typescript/lib/tsc.js directly — Node v25 workaround)
+npm run format       # Format all files with Prettier
+npm run format:check # Check formatting without writing
 ```
 
+To add a shadcn/ui component:
+```bash
+NODE_EXTRA_CA_CERTS=/tmp/system-ca.pem npx shadcn@latest add <component>
+```
+
+> **Corporate SSL note:** `NODE_EXTRA_CA_CERTS` is required in this environment due to corporate SSL inspection.
+> Build the combined CA bundle once per session:
+> ```bash
+> security find-certificate -a -p /Library/Keychains/System.keychain > /tmp/system-ca.pem
+> security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain >> /tmp/system-ca.pem
+> cat /Users/lamisi/Downloads/corporate-ca.pem >> /tmp/system-ca.pem
+> npm config set cafile /tmp/system-ca.pem
+> ```
 ## Folder Structure
 
 > To be confirmed after issue #1. Planned layout:
