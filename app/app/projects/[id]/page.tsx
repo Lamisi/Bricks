@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { inviteMember, type ProjectFormState } from "@/lib/actions/projects";
+import { DocumentUpload } from "@/components/document-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Settings, UserPlus } from "lucide-react";
+import { Download, ExternalLink, FileText, MapPin, Settings, UserPlus } from "lucide-react";
 import type { ProjectRole } from "@/lib/auth/rbac";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -33,6 +34,14 @@ const ROLE_LABELS: Record<string, string> = {
   architect: "Architect",
   civil_engineer: "Civil Engineer",
   carpenter: "Carpenter",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  in_review: "In Review",
+  approved: "Approved",
+  changes_requested: "Changes Requested",
+  submitted: "Submitted",
 };
 
 type Project = {
@@ -50,6 +59,27 @@ type Member = {
   profiles: { full_name: string | null; avatar_url: string | null } | null;
 };
 
+type DocumentRow = {
+  id: string;
+  title: string;
+  status: string;
+  updated_at: string;
+  current_version: {
+    id: string;
+    version_number: number;
+    file_name: string | null;
+    mime_type: string | null;
+    file_size: number | null;
+    storage_path: string | null;
+  } | null;
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ProjectPage({
   params,
 }: {
@@ -59,8 +89,10 @@ export default function ProjectPage({
   const [project, setProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [myRole, setMyRole] = useState<ProjectRole | null>(null);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteRole, setInviteRole] = useState<string>("architect");
+  const [openingUrl, setOpeningUrl] = useState<string | null>(null);
 
   const boundInvite = projectId
     ? inviteMember.bind(null, projectId)
@@ -72,13 +104,43 @@ export default function ProjectPage({
     {},
   );
 
+  const loadDocuments = useCallback(async (pid: string) => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("documents")
+      .select(
+        `id, title, status, updated_at,
+         document_versions!current_version_id(
+           id, version_number, file_name, mime_type, file_size, storage_path
+         )`,
+      )
+      .eq("project_id", pid)
+      .order("updated_at", { ascending: false });
+
+    if (data) {
+      setDocuments(
+        data.map((d) => {
+          const ver = Array.isArray(d.document_versions)
+            ? d.document_versions[0]
+            : d.document_versions;
+          return {
+            id: d.id,
+            title: d.title,
+            status: d.status,
+            updated_at: d.updated_at,
+            current_version: ver ?? null,
+          };
+        }),
+      );
+    }
+  }, []);
+
   useEffect(() => {
     params.then((p) => setProjectId(p.id));
   }, [params]);
 
   useEffect(() => {
     if (!projectId) return;
-    const supabase = createClient();
 
     async function load() {
       const supabase = createClient();
@@ -107,11 +169,29 @@ export default function ProjectPage({
 
       const me = memberRows?.find((m) => m.user_id === user?.id);
       setMyRole((me?.role as ProjectRole) ?? null);
+
+      await loadDocuments(projectId!);
       setLoading(false);
     }
 
     load();
-  }, [projectId]);
+  }, [projectId, loadDocuments]);
+
+  async function openSignedUrl(storagePath: string, mode: "view" | "download") {
+    if (!projectId) return;
+    setOpeningUrl(storagePath);
+    try {
+      const res = await fetch(
+        `/api/documents/signed-url?path=${encodeURIComponent(storagePath)}&projectId=${projectId}&mode=${mode}`,
+      );
+      const body = (await res.json()) as { url?: string; error?: string };
+      if (body.url) {
+        window.open(body.url, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setOpeningUrl(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -125,6 +205,8 @@ export default function ProjectPage({
   if (!project) return notFound();
 
   const isAdmin = myRole === "admin";
+  const canUpload = myRole === "admin" || myRole === "architect";
+
   const initials = (name: string | null) =>
     (name ?? "?")
       .split(" ")
@@ -146,7 +228,7 @@ export default function ProjectPage({
             </p>
           )}
           {project.description && (
-            <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+            <p className="text-sm text-muted-foreground mt-2 max-xl">
               {project.description}
             </p>
           )}
@@ -162,6 +244,82 @@ export default function ProjectPage({
       </div>
 
       <Separator />
+
+      {/* Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Documents</CardTitle>
+          <CardDescription>
+            {documents.length === 0
+              ? "No documents yet."
+              : `${documents.length} document${documents.length !== 1 ? "s" : ""}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Upload zone — architects and admins only */}
+          {canUpload && (
+            <DocumentUpload
+              projectId={project.id}
+              onUploadComplete={() => loadDocuments(project.id)}
+            />
+          )}
+
+          {/* Document list */}
+          {documents.length > 0 && (
+            <div className="divide-y rounded-md border">
+              {documents.map((doc) => {
+                const ver = doc.current_version;
+                const isOpening = openingUrl === ver?.storage_path;
+                return (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {ver ? `v${ver.version_number}` : "—"}
+                          {ver?.file_size ? ` · ${formatBytes(ver.file_size)}` : ""}
+                          {" · "}
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 align-middle">
+                            {STATUS_LABELS[doc.status] ?? doc.status}
+                          </Badge>
+                        </p>
+                      </div>
+                    </div>
+                    {ver?.storage_path && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={isOpening}
+                          onClick={() => openSignedUrl(ver.storage_path!, "view")}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={isOpening}
+                          onClick={() => openSignedUrl(ver.storage_path!, "download")}
+                        >
+                          <Download className="h-3.5 w-3.5 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Members */}
       <Card>
@@ -252,16 +410,6 @@ export default function ProjectPage({
           </form>
         </Card>
       )}
-
-      {/* Documents placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Documents</CardTitle>
-          <CardDescription>
-            Document upload and management will be available in issue #7.
-          </CardDescription>
-        </CardHeader>
-      </Card>
     </div>
   );
 }
