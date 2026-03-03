@@ -32,6 +32,15 @@ npm run format       # Format all files with Prettier
 npm run format:check # Check formatting without writing
 ```
 
+Supabase CLI (binary at `~/.local/bin/supabase`):
+```bash
+supabase login                                           # Authenticate (requires personal access token)
+supabase link --project-ref frvgorgoiunskjoptzcp        # Link to the Bricks Supabase project
+supabase db push                                         # Apply pending migrations
+supabase migration new <name>                            # Create a new migration file
+supabase gen types typescript --linked > types/database.ts  # Regenerate TypeScript types
+```
+
 To add a shadcn/ui component:
 ```bash
 NODE_EXTRA_CA_CERTS=/tmp/system-ca.pem npx shadcn@latest add <component>
