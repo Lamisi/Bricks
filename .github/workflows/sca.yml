@@ -1,0 +1,36 @@
+name: SCA
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write  # required to upload SARIF to GitHub Code Scanning
+
+jobs:
+  trivy:
+    name: Dependency vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy (filesystem scan)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: "1"          # block PR on HIGH or CRITICAL findings
+          format: sarif
+          output: trivy.sarif
+          ignore-unfixed: true    # suppress CVEs with no available fix
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()              # upload even when trivy exits non-zero
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
