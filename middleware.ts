@@ -29,13 +29,23 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { pathname } = request.nextUrl;
+
   // Redirect unauthenticated users away from protected routes.
-  // Protected routes will be added under /app/* in issue #4.
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/app");
+  const isProtectedRoute = pathname.startsWith("/app");
   if (isProtectedRoute && !user) {
-    const signInUrl = request.nextUrl.clone();
-    signInUrl.pathname = "/sign-in";
-    return NextResponse.redirect(signInUrl);
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from auth pages.
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+  if (isAuthRoute && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/app";
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
