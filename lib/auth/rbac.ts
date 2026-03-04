@@ -121,3 +121,16 @@ export const ROLES_THAT_CAN_REVIEW_DOCUMENTS: ProjectRole[] = [
 ];
 
 export const ROLES_THAT_CAN_MANAGE_MEMBERS: ProjectRole[] = ["admin"];
+
+/**
+ * Returns the list of statuses a given role can transition a document to,
+ * given its current status. Pure function — safe to use in client components.
+ */
+export function getAvailableTransitions(
+  role: ProjectRole,
+  fromStatus: DocumentStatus,
+): DocumentStatus[] {
+  return ALLOWED_TRANSITIONS[role]
+    .filter((t) => t.from === fromStatus)
+    .map((t) => t.to);
+}

@@ -97,6 +97,7 @@ export default async function DocumentPage({
       projectId={projectId}
       canEdit={canEdit}
       currentUserId={user.id}
+      userRole={role ?? "carpenter"}
     />
   );
 }

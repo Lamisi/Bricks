@@ -18,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CommentThread } from "@/components/comment-thread";
+import { DocumentStatusActions } from "@/components/document-status-actions";
+import type { ProjectRole, DocumentStatus } from "@/lib/auth/rbac";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -79,6 +81,7 @@ interface DocumentViewerClientProps {
   projectId: string;
   canEdit: boolean;
   currentUserId: string;
+  userRole: ProjectRole;
 }
 
 const DWG_MIMES = new Set([
@@ -99,6 +102,7 @@ export function DocumentViewerClient({
   projectId,
   canEdit,
   currentUserId,
+  userRole,
 }: DocumentViewerClientProps) {
   const [selectedVersionId, setSelectedVersionId] = useState(initialVersionId);
   const [content, setContent] = useState<LoadedContent>(initialContent);
@@ -173,10 +177,16 @@ export function DocumentViewerClient({
           <Badge variant="outline" className="text-xs">
             {STATUS_LABELS[document.status] ?? document.status}
           </Badge>
+          <DocumentStatusActions
+            docId={document.id}
+            projectId={projectId}
+            currentStatus={document.status as DocumentStatus}
+            userRole={userRole}
+          />
         </div>
 
         <div className="flex items-center gap-2">
-          {canEdit && isRichText && (
+          {canEdit && isRichText && document.status !== "approved" && (
             <>
               <Button variant="ghost" size="sm" onClick={openPdfExport}>
                 <FileDown className="h-4 w-4 mr-1.5" />
@@ -189,6 +199,12 @@ export function DocumentViewerClient({
                 </Link>
               </Button>
             </>
+          )}
+          {canEdit && isRichText && document.status === "approved" && (
+            <Button variant="ghost" size="sm" onClick={openPdfExport}>
+              <FileDown className="h-4 w-4 mr-1.5" />
+              Export PDF
+            </Button>
           )}
           {!isRichText && selectedVersion.storage_path && (
             <Button variant="outline" size="sm" onClick={download}>
