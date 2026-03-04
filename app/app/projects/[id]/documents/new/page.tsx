@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 
 export default async function NewDocumentPage({
   params,
@@ -47,11 +47,33 @@ export default async function NewDocumentPage({
         Back to project
       </Link>
 
+      {/* Generate with AI */}
+      <Card className="border-2 border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4" />
+            Generate with AI
+          </CardTitle>
+          <CardDescription>
+            Describe your project and Claude generates a compliant first draft in seconds,
+            referencing Norwegian building regulations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Button variant="outline" asChild>
+            <Link href={`/app/projects/${projectId}/documents/generate`}>
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              Start generation wizard
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>New document</CardTitle>
+          <CardTitle className="text-base">Blank document</CardTitle>
           <CardDescription>
-            Create a rich-text document. You can upload files from the project page.
+            Start with an empty rich-text editor. You can upload files from the project page.
           </CardDescription>
         </CardHeader>
         <form action={action}>
