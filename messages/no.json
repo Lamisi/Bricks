@@ -10,6 +10,255 @@
     "cta": {
       "primary": "Start gratis",
       "secondary": "Se hvordan det fungerer"
+    },
+    "features": {
+      "label": "Hva Bricks gjør",
+      "heading": "Alt på ett sted",
+      "items": {
+        "documents": {
+          "title": "Dokumenthåndtering",
+          "description": "Last opp tegninger, lag forslag og spor alle versjoner — med full revisjonsspor fra utkast til godkjent."
+        },
+        "compliance": {
+          "title": "AI-samsvarskontroll",
+          "description": "Sjekk dokumentene dine mot norske kommunale regler og lovkrav umiddelbart før innsending."
+        },
+        "collaboration": {
+          "title": "Teamsamarbeid",
+          "description": "Arkitekter, ingeniører og tømrere jobber sammen i strukturerte gjennomgangs- og godkjenningsflyter."
+        }
+      }
+    },
+    "howItWorks": {
+      "label": "Slik fungerer det",
+      "heading": "Fra opplasting til godkjenning",
+      "steps": {
+        "upload": {
+          "title": "Last opp eller opprett",
+          "description": "Last opp eksisterende filer eller skriv dokumenter direkte i Bricks."
+        },
+        "check": {
+          "title": "AI sjekker det",
+          "description": "Samsvarsavvik markeres automatisk mot relevante forskrifter."
+        },
+        "review": {
+          "title": "Teamet gjennomgår",
+          "description": "Send til gjennomgang, innhent tilbakemeldinger og få godkjenning fra teamet."
+        },
+        "submit": {
+          "title": "Send inn med trygghet",
+          "description": "Send til myndighetene og vit at dokumentasjonen er fullstendig og korrekt."
+        }
+      }
+    },
+    "cta2": {
+      "heading": "Klar for å bli compliant?",
+      "body": "Bli med på byggeteam over hele Norge som bruker Bricks for å få dokumentasjonen riktig — hver gang.",
+      "button": "Start gratis"
+    },
+    "footer": {
+      "rights": "Alle rettigheter forbeholdt."
     }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Logg inn",
+      "description": "Skriv inn e-post og passord for å få tilgang til prosjektene dine.",
+      "email": "E-post",
+      "password": "Passord",
+      "submit": "Logg inn",
+      "submitting": "Logger inn…",
+      "noAccount": "Har du ikke konto?",
+      "signUp": "Registrer deg",
+      "error": {
+        "invalidCredentials": "Feil e-post eller passord."
+      }
+    },
+    "signUp": {
+      "title": "Opprett konto",
+      "description": "Bli med i Bricks for å administrere byggedokumentasjonen din.",
+      "fullName": "Fullt navn",
+      "email": "E-post",
+      "password": "Passord",
+      "submit": "Opprett konto",
+      "submitting": "Oppretter konto…",
+      "alreadyHaveAccount": "Har du allerede konto?",
+      "signIn": "Logg inn",
+      "checkEmail": {
+        "title": "Sjekk e-posten din",
+        "backToSignIn": "Tilbake til innlogging"
+      },
+      "error": {
+        "alreadyRegistered": "En konto med denne e-postadressen finnes allerede.",
+        "weakPassword": "Passordet må være minst 6 tegn.",
+        "generic": "Kunne ikke opprette konto. Prøv igjen."
+      }
+    }
+  },
+  "appLayout": {
+    "projects": "Prosjekter",
+    "signOut": "Logg ut"
+  },
+  "projects": {
+    "title": "Prosjekter",
+    "subtitle": "Byggeprosjekter du er med i",
+    "newProject": "Nytt prosjekt",
+    "empty": "Du har ingen prosjekter ennå.",
+    "createFirst": "Opprett ditt første prosjekt",
+    "roles": {
+      "admin": "Admin",
+      "architect": "Arkitekt",
+      "civil_engineer": "Sivilingeniør",
+      "carpenter": "Tømrer"
+    }
+  },
+  "newProject": {
+    "heading": "Nytt prosjekt",
+    "card": {
+      "title": "Prosjektdetaljer",
+      "description": "Fyll inn detaljer for byggeprosjektet ditt."
+    },
+    "fields": {
+      "name": "Prosjektnavn *",
+      "location": "Sted",
+      "description": "Beskrivelse",
+      "orgName": "Organisasjonsnavn",
+      "orgNameHint": "Brukes til å gruppere prosjektene dine. Ignoreres hvis du allerede har en organisasjon."
+    },
+    "placeholders": {
+      "name": "Oslofjord Boligblokk A",
+      "location": "Oslo, Norge",
+      "description": "Kort beskrivelse av prosjektomfanget…",
+      "orgName": "Firmanavnet ditt (opprettes ved første prosjekt)"
+    },
+    "submit": "Opprett prosjekt",
+    "submitting": "Oppretter…",
+    "error": {
+      "nameRequired": "Prosjektnavn er påkrevd.",
+      "generic": "Kunne ikke opprette prosjekt. Prøv igjen."
+    }
+  },
+  "projectDetail": {
+    "settings": "Innstillinger",
+    "documents": {
+      "title": "Dokumenter",
+      "empty": "Ingen dokumenter ennå.",
+      "count_one": "{{count}} dokument",
+      "count_other": "{{count}} dokumenter",
+      "newDocument": "Nytt dokument",
+      "download": "Last ned",
+      "statuses": {
+        "draft": "Utkast",
+        "in_review": "Til gjennomgang",
+        "approved": "Godkjent",
+        "changes_requested": "Endringer forespurt",
+        "submitted": "Innsendt"
+      }
+    },
+    "members": {
+      "title": "Medlemmer",
+      "count_one": "{{count}} medlem i dette prosjektet",
+      "count_other": "{{count}} medlemmer i dette prosjektet"
+    },
+    "invite": {
+      "title": "Inviter et medlem",
+      "email": "E-post",
+      "emailPlaceholder": "kollega@eksempel.no",
+      "role": "Rolle",
+      "submit": "Send invitasjon",
+      "submitting": "Sender…"
+    }
+  },
+  "projectSettings": {
+    "title": "Prosjektinnstillinger",
+    "general": "Generelt",
+    "fields": {
+      "name": "Prosjektnavn *",
+      "location": "Sted",
+      "description": "Beskrivelse"
+    },
+    "save": "Lagre endringer",
+    "saving": "Lagrer…",
+    "dangerZone": {
+      "title": "Faresone",
+      "description": "Arkivering skjuler prosjektet fra dashbordet. Alle data bevares.",
+      "archive": "Arkiver prosjekt",
+      "archiving": "Arkiverer…",
+      "confirm": "Arkivere dette prosjektet? Det vil bli skjult fra dashbordet."
+    }
+  },
+  "newDocument": {
+    "backToProject": "Tilbake til prosjekt",
+    "generateWithAi": {
+      "title": "Generer med AI",
+      "description": "Beskriv prosjektet ditt og Claude genererer et forskriftsmessig førsteutkast på sekunder, med referanser til norsk byggeforskrift.",
+      "button": "Start genereringsveiviseren"
+    },
+    "blank": {
+      "title": "Tomt dokument",
+      "description": "Start med en tom rikteksteditor. Du kan laste opp filer fra prosjektsiden.",
+      "titleLabel": "Dokumenttittel",
+      "titlePlaceholder": "f.eks. Prosjektforslag – Fase 1",
+      "submit": "Opprett og åpne editor",
+      "cancel": "Avbryt"
+    }
+  },
+  "generateDocument": {
+    "back": "Tilbake",
+    "title": "Generer dokument",
+    "description": "Beskriv prosjektet ditt og Claude vil generere et forskriftsmessig førsteutkast med referanser til norsk byggeforskrift.",
+    "fields": {
+      "title": "Dokumenttittel",
+      "titlePlaceholder": "f.eks. Søknad om rammetillatelse – Eikeveien 12",
+      "projectType": "Prosjekttype",
+      "projectTypePlaceholder": "Velg type…",
+      "municipality": "Kommune",
+      "municipalityPlaceholder": "f.eks. Oslo, Bergen, Trondheim",
+      "scope": "Prosjektomfang",
+      "scopePlaceholder": "Beskriv hva du bygger — formål, beliggenhet, kontekst…",
+      "specs": "Viktige tekniske spesifikasjoner",
+      "specsOptional": "(valgfritt)",
+      "specsPlaceholder": "f.eks. 3 etasjer, 450 m² fotavtrykk, trekonstruksjon, 12 boenheter…",
+      "language": "Dokumentspråk"
+    },
+    "projectTypes": {
+      "residential_building": "Boligbygg",
+      "commercial_building": "Nærings-/kontorbygg",
+      "renovation": "Renovering / rehabilitering",
+      "extension": "Bygningsutvidelse",
+      "infrastructure": "Infrastruktur / anleggsarbeider"
+    },
+    "languages": {
+      "no": "Norsk (Bokmål)",
+      "en": "Engelsk"
+    },
+    "generate": "Generer dokument",
+    "status": {
+      "generating": "Genererer dokument…",
+      "saving": "Lagrer utkast…",
+      "ready": "Utkast klart — du kan redigere det nå"
+    },
+    "actions": {
+      "regenerate": "Generer på nytt",
+      "openInEditor": "Åpne i editor"
+    },
+    "error": {
+      "createFailed": "Kunne ikke opprette dokument",
+      "generationFailed": "Generering mislyktes. Prøv igjen."
+    }
+  },
+  "join": {
+    "invalidLink": {
+      "title": "Ugyldig invitasjonslenke",
+      "description": "Denne lenken mangler et invitasjonstoken. Bruk lenken fra invitasjons-e-posten."
+    },
+    "title": "Godta invitasjon",
+    "description": "Du har blitt invitert til å bli med i et prosjekt på Bricks. Klikk nedenfor for å godta og få tilgang.",
+    "accept": "Godta invitasjon",
+    "joining": "Blir med…",
+    "redirecting": "Omdirigerer…"
+  },
+  "languageSwitcher": {
+    "label": "Språk"
   }
 }

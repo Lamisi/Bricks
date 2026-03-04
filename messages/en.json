@@ -10,6 +10,255 @@
     "cta": {
       "primary": "Start for free",
       "secondary": "See how it works"
+    },
+    "features": {
+      "label": "What Bricks does",
+      "heading": "Everything in one place",
+      "items": {
+        "documents": {
+          "title": "Document management",
+          "description": "Upload drawings, create proposals, and track every version — with a full audit trail from draft to approved."
+        },
+        "compliance": {
+          "title": "AI compliance checks",
+          "description": "Instantly check your documents against Norwegian city codes and legal requirements before submitting."
+        },
+        "collaboration": {
+          "title": "Team collaboration",
+          "description": "Architects, engineers, and carpenters work together in structured review and approval workflows."
+        }
+      }
+    },
+    "howItWorks": {
+      "label": "How it works",
+      "heading": "From upload to approval",
+      "steps": {
+        "upload": {
+          "title": "Upload or create",
+          "description": "Upload existing files or write documents directly in Bricks."
+        },
+        "check": {
+          "title": "AI checks it",
+          "description": "Compliance issues are flagged automatically against relevant regulations."
+        },
+        "review": {
+          "title": "Team reviews",
+          "description": "Submit for review, gather feedback, and get sign-off from your team."
+        },
+        "submit": {
+          "title": "Submit with confidence",
+          "description": "Send to authorities knowing your documentation is complete and compliant."
+        }
+      }
+    },
+    "cta2": {
+      "heading": "Ready to get compliant?",
+      "body": "Join construction teams across Norway using Bricks to get their documentation right, every time.",
+      "button": "Start for free"
+    },
+    "footer": {
+      "rights": "All rights reserved."
     }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "description": "Enter your email and password to access your projects.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "error": {
+        "invalidCredentials": "Incorrect email or password."
+      }
+    },
+    "signUp": {
+      "title": "Create an account",
+      "description": "Join Bricks to manage your construction documentation.",
+      "fullName": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "alreadyHaveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "checkEmail": {
+        "title": "Check your email",
+        "backToSignIn": "Back to sign in"
+      },
+      "error": {
+        "alreadyRegistered": "An account with this email already exists.",
+        "weakPassword": "Password must be at least 6 characters.",
+        "generic": "Could not create account. Please try again."
+      }
+    }
+  },
+  "appLayout": {
+    "projects": "Projects",
+    "signOut": "Sign out"
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Construction projects you belong to",
+    "newProject": "New project",
+    "empty": "You don't have any projects yet.",
+    "createFirst": "Create your first project",
+    "roles": {
+      "admin": "Admin",
+      "architect": "Architect",
+      "civil_engineer": "Civil Engineer",
+      "carpenter": "Carpenter"
+    }
+  },
+  "newProject": {
+    "heading": "New project",
+    "card": {
+      "title": "Project details",
+      "description": "Fill in the details for your construction project."
+    },
+    "fields": {
+      "name": "Project name *",
+      "location": "Location",
+      "description": "Description",
+      "orgName": "Organization name",
+      "orgNameHint": "Used to group your projects. Ignored if you already have an organization."
+    },
+    "placeholders": {
+      "name": "Oslofjord Residential Block A",
+      "location": "Oslo, Norway",
+      "description": "Brief description of the project scope…",
+      "orgName": "Your company name (created on first project)"
+    },
+    "submit": "Create project",
+    "submitting": "Creating…",
+    "error": {
+      "nameRequired": "Project name is required.",
+      "generic": "Could not create project. Please try again."
+    }
+  },
+  "projectDetail": {
+    "settings": "Settings",
+    "documents": {
+      "title": "Documents",
+      "empty": "No documents yet.",
+      "count_one": "{{count}} document",
+      "count_other": "{{count}} documents",
+      "newDocument": "New document",
+      "download": "Download",
+      "statuses": {
+        "draft": "Draft",
+        "in_review": "In Review",
+        "approved": "Approved",
+        "changes_requested": "Changes Requested",
+        "submitted": "Submitted"
+      }
+    },
+    "members": {
+      "title": "Members",
+      "count_one": "{{count}} member in this project",
+      "count_other": "{{count}} members in this project"
+    },
+    "invite": {
+      "title": "Invite a member",
+      "email": "Email",
+      "emailPlaceholder": "colleague@example.com",
+      "role": "Role",
+      "submit": "Send invitation",
+      "submitting": "Sending…"
+    }
+  },
+  "projectSettings": {
+    "title": "Project settings",
+    "general": "General",
+    "fields": {
+      "name": "Project name *",
+      "location": "Location",
+      "description": "Description"
+    },
+    "save": "Save changes",
+    "saving": "Saving…",
+    "dangerZone": {
+      "title": "Danger zone",
+      "description": "Archiving hides the project from the dashboard. All data is preserved.",
+      "archive": "Archive project",
+      "archiving": "Archiving…",
+      "confirm": "Archive this project? It will be hidden from the dashboard."
+    }
+  },
+  "newDocument": {
+    "backToProject": "Back to project",
+    "generateWithAi": {
+      "title": "Generate with AI",
+      "description": "Describe your project and Claude generates a compliant first draft in seconds, referencing Norwegian building regulations.",
+      "button": "Start generation wizard"
+    },
+    "blank": {
+      "title": "Blank document",
+      "description": "Start with an empty rich-text editor. You can upload files from the project page.",
+      "titleLabel": "Document title",
+      "titlePlaceholder": "e.g. Project Proposal – Phase 1",
+      "submit": "Create and open editor",
+      "cancel": "Cancel"
+    }
+  },
+  "generateDocument": {
+    "back": "Back",
+    "title": "Generate document",
+    "description": "Describe your project and Claude will generate a compliant first draft referencing Norwegian building regulations.",
+    "fields": {
+      "title": "Document title",
+      "titlePlaceholder": "e.g. Søknad om rammetillatelse – Eikeveien 12",
+      "projectType": "Project type",
+      "projectTypePlaceholder": "Select type…",
+      "municipality": "Municipality",
+      "municipalityPlaceholder": "e.g. Oslo, Bergen, Trondheim",
+      "scope": "Project scope",
+      "scopePlaceholder": "Describe what you are building — purpose, location, context…",
+      "specs": "Key structural specifications",
+      "specsOptional": "(optional)",
+      "specsPlaceholder": "e.g. 3 floors, 450 m² footprint, timber frame, 12 residential units…",
+      "language": "Document language"
+    },
+    "projectTypes": {
+      "residential_building": "Residential building",
+      "commercial_building": "Commercial / office building",
+      "renovation": "Renovation / rehabilitation",
+      "extension": "Building extension",
+      "infrastructure": "Infrastructure / civil works"
+    },
+    "languages": {
+      "no": "Norwegian (Bokmål)",
+      "en": "English"
+    },
+    "generate": "Generate document",
+    "status": {
+      "generating": "Generating document…",
+      "saving": "Saving draft…",
+      "ready": "Draft ready — you can edit it now"
+    },
+    "actions": {
+      "regenerate": "Regenerate",
+      "openInEditor": "Open in editor"
+    },
+    "error": {
+      "createFailed": "Could not create document",
+      "generationFailed": "Generation failed. Please try again."
+    }
+  },
+  "join": {
+    "invalidLink": {
+      "title": "Invalid invitation link",
+      "description": "This link is missing an invitation token. Please use the link from your invitation email."
+    },
+    "title": "Accept invitation",
+    "description": "You've been invited to join a project on Bricks. Click below to accept and get access.",
+    "accept": "Accept invitation",
+    "joining": "Joining…",
+    "redirecting": "Redirecting…"
+  },
+  "languageSwitcher": {
+    "label": "Language"
   }
 }
