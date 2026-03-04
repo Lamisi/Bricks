@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserProjectRole } from "@/lib/auth/rbac";
 import { getSignedViewUrl } from "@/lib/supabase/storage";
+import { tiptapJsonToHtml } from "@/lib/tiptap/html";
 import { DocumentViewerClient } from "@/components/document-viewer-client";
 
 export default async function DocumentPage({
@@ -27,11 +29,16 @@ export default async function DocumentPage({
 
   if (!doc) return notFound();
 
-  // Fetch all versions newest-first (admin client — RLS already checked above)
+  const role = await getUserProjectRole(supabase, projectId);
+  const canEdit = role === "admin" || role === "architect";
+
+  // Fetch all versions newest-first (admin client — membership already verified)
   const admin = createAdminClient();
   const { data: versions } = await admin
     .from("document_versions")
-    .select("id, version_number, file_name, file_size, mime_type, storage_path, created_by, created_at")
+    .select(
+      "id, version_number, content_type, file_name, file_size, mime_type, storage_path, rich_text_json, created_by, created_at",
+    )
     .eq("document_id", docId)
     .order("version_number", { ascending: false });
 
@@ -48,18 +55,22 @@ export default async function DocumentPage({
     (profiles ?? []).map((p) => [p.id, p.full_name ?? "Unknown"]),
   );
 
-  // Generate initial signed URL for the latest version
+  // Resolve initial content for the latest version
   const latestVersion = versions[0];
-  let initialSignedUrl: string | null = null;
-  if (latestVersion.storage_path) {
+  let initialContent: { type: "file"; url: string } | { type: "rich_text"; html: string } | null =
+    null;
+
+  if (latestVersion.content_type === "file" && latestVersion.storage_path) {
     try {
-      initialSignedUrl = await getSignedViewUrl(latestVersion.storage_path);
+      const url = await getSignedViewUrl(latestVersion.storage_path);
+      initialContent = { type: "file", url };
     } catch {
-      // Client will show error state + retry button
+      // Client shows error + retry
     }
+  } else if (latestVersion.content_type === "rich_text" && latestVersion.rich_text_json) {
+    initialContent = { type: "rich_text", html: tiptapJsonToHtml(latestVersion.rich_text_json) };
   }
 
-  // Observability
   console.log("Document viewed:", {
     documentId: docId,
     versionId: latestVersion.id,
@@ -70,12 +81,21 @@ export default async function DocumentPage({
     <DocumentViewerClient
       document={{ id: doc.id, title: doc.title, status: doc.status }}
       versions={versions.map((v) => ({
-        ...v,
+        id: v.id,
+        version_number: v.version_number,
+        content_type: v.content_type,
+        file_name: v.file_name,
+        file_size: v.file_size,
+        mime_type: v.mime_type,
+        storage_path: v.storage_path,
+        created_by: v.created_by,
+        created_at: v.created_at,
         uploaderName: profileMap[v.created_by] ?? "Unknown",
       }))}
       initialVersionId={latestVersion.id}
-      initialSignedUrl={initialSignedUrl}
+      initialContent={initialContent}
       projectId={projectId}
+      canEdit={canEdit}
     />
   );
 }
