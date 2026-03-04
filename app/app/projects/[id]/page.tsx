@@ -275,10 +275,15 @@ export default function ProjectPage({
                     key={doc.id}
                     className="flex items-center justify-between gap-3 px-3 py-2.5"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <Link
+                      href={`/app/projects/${project.id}/documents/${doc.id}`}
+                      className="flex items-center gap-2.5 min-w-0 flex-1 group"
+                    >
                       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.title}</p>
+                        <p className="text-sm font-medium truncate group-hover:underline">
+                          {doc.title}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {ver ? `v${ver.version_number}` : "—"}
                           {ver?.file_size ? ` · ${formatBytes(ver.file_size)}` : ""}
@@ -288,30 +293,19 @@ export default function ProjectPage({
                           </Badge>
                         </p>
                       </div>
-                    </div>
+                      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                    </Link>
                     {ver?.storage_path && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          disabled={isOpening}
-                          onClick={() => openSignedUrl(ver.storage_path!, "view")}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          disabled={isOpening}
-                          onClick={() => openSignedUrl(ver.storage_path!, "download")}
-                        >
-                          <Download className="h-3.5 w-3.5 mr-1" />
-                          Download
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs shrink-0"
+                        disabled={isOpening}
+                        onClick={() => openSignedUrl(ver.storage_path!, "download")}
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        Download
+                      </Button>
                     )}
                   </div>
                 );
