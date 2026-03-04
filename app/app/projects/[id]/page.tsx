@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ExternalLink, FileText, MapPin, Settings, UserPlus } from "lucide-react";
+import { Download, ExternalLink, FileText, MapPin, Plus, Settings, UserPlus } from "lucide-react";
 import type { ProjectRole } from "@/lib/auth/rbac";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -247,13 +247,23 @@ export default function ProjectPage({
 
       {/* Documents */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Documents</CardTitle>
-          <CardDescription>
-            {documents.length === 0
-              ? "No documents yet."
-              : `${documents.length} document${documents.length !== 1 ? "s" : ""}`}
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <div>
+            <CardTitle className="text-base">Documents</CardTitle>
+            <CardDescription className="mt-1">
+              {documents.length === 0
+                ? "No documents yet."
+                : `${documents.length} document${documents.length !== 1 ? "s" : ""}`}
+            </CardDescription>
+          </div>
+          {canUpload && projectId && (
+            <Link href={`/app/projects/${projectId}/documents/new`}>
+              <Button variant="outline" size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                New document
+              </Button>
+            </Link>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Upload zone — architects and admins only */}

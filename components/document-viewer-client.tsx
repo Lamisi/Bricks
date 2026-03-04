@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Download,
   FileDown,
+  Pencil,
   RefreshCw,
   ZoomIn,
   ZoomOut,
@@ -40,9 +41,12 @@ function formatDate(iso: string): string {
   });
 }
 
+type ContentType = "file" | "rich_text";
+
 type Version = {
   id: string;
   version_number: number;
+  content_type: ContentType;
   file_name: string | null;
   file_size: number | null;
   mime_type: string | null;
@@ -51,6 +55,13 @@ type Version = {
   created_at: string;
   uploaderName: string;
 };
+
+type InitialContent =
+  | { type: "file"; url: string }
+  | { type: "rich_text"; html: string }
+  | null;
+
+type LoadedContent = InitialContent;
 
 type DocumentMeta = {
   id: string;
@@ -62,8 +73,9 @@ interface DocumentViewerClientProps {
   document: DocumentMeta;
   versions: Version[];
   initialVersionId: string;
-  initialSignedUrl: string | null;
+  initialContent: InitialContent;
   projectId: string;
+  canEdit: boolean;
 }
 
 const DWG_MIMES = new Set([
@@ -80,14 +92,15 @@ export function DocumentViewerClient({
   document,
   versions,
   initialVersionId,
-  initialSignedUrl,
+  initialContent,
   projectId,
+  canEdit,
 }: DocumentViewerClientProps) {
   const [selectedVersionId, setSelectedVersionId] = useState(initialVersionId);
-  const [signedUrl, setSignedUrl] = useState<string | null>(initialSignedUrl);
-  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [zoomIndex, setZoomIndex] = useState(2); // index into ZOOM_STEPS, default 1×
+  const [content, setContent] = useState<LoadedContent>(initialContent);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [zoomIndex, setZoomIndex] = useState(2); // default 1×
 
   const selectedVersion =
     versions.find((v) => v.id === selectedVersionId) ?? versions[0];
@@ -95,57 +108,47 @@ export function DocumentViewerClient({
   const isPdf = selectedVersion.mime_type === "application/pdf";
   const isImage = selectedVersion.mime_type?.startsWith("image/") ?? false;
   const isDwg = DWG_MIMES.has(selectedVersion.mime_type ?? "");
-
-  async function fetchSignedUrl(storagePath: string, mode: "view" | "download" = "view") {
-    const res = await fetch(
-      `/api/documents/signed-url?path=${encodeURIComponent(storagePath)}&projectId=${projectId}&mode=${mode}`,
-    );
-    const body = (await res.json()) as { url?: string; error?: string };
-    if (!body.url) throw new Error(body.error ?? "Could not load file.");
-    return body.url;
-  }
+  const isRichText = selectedVersion.content_type === "rich_text";
 
   async function loadVersion(versionId: string) {
-    const version = versions.find((v) => v.id === versionId);
-    if (!version?.storage_path) return;
-
     setSelectedVersionId(versionId);
-    setIsLoadingUrl(true);
-    setUrlError(null);
+    setIsLoading(true);
+    setLoadError(null);
     setZoomIndex(2);
 
     try {
-      const url = await fetchSignedUrl(version.storage_path);
-      setSignedUrl(url);
+      const res = await fetch(
+        `/api/documents/version-content?versionId=${versionId}&projectId=${projectId}`,
+      );
+      const body = (await res.json()) as LoadedContent & { error?: string };
+      if ("error" in body && body.error) throw new Error(body.error);
+      setContent(body);
     } catch (err) {
-      setUrlError(err instanceof Error ? err.message : "Could not load file.");
+      setLoadError(err instanceof Error ? err.message : "Could not load version.");
     } finally {
-      setIsLoadingUrl(false);
+      setIsLoading(false);
     }
   }
 
-  async function retryLoad() {
-    if (!selectedVersion.storage_path) return;
-    setIsLoadingUrl(true);
-    setUrlError(null);
-    try {
-      const url = await fetchSignedUrl(selectedVersion.storage_path);
-      setSignedUrl(url);
-    } catch (err) {
-      setUrlError(err instanceof Error ? err.message : "Could not load file.");
-    } finally {
-      setIsLoadingUrl(false);
-    }
+  async function retry() {
+    await loadVersion(selectedVersionId);
   }
 
   async function download() {
     if (!selectedVersion.storage_path) return;
-    try {
-      const url = await fetchSignedUrl(selectedVersion.storage_path, "download");
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch {
-      // silent — user can retry
-    }
+    const res = await fetch(
+      `/api/documents/signed-url?path=${encodeURIComponent(selectedVersion.storage_path)}&projectId=${projectId}&mode=download`,
+    );
+    const body = (await res.json()) as { url?: string };
+    if (body.url) window.open(body.url, "_blank", "noopener,noreferrer");
+  }
+
+  function openPdfExport() {
+    window.open(
+      `/api/documents/${document.id}/export/pdf`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   }
 
   const zoom = ZOOM_STEPS[zoomIndex];
@@ -168,18 +171,36 @@ export function DocumentViewerClient({
           </Badge>
         </div>
 
-        <Button variant="outline" size="sm" onClick={download} disabled={!selectedVersion.storage_path}>
-          <Download className="h-4 w-4 mr-1.5" />
-          Download
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit && isRichText && (
+            <>
+              <Button variant="ghost" size="sm" onClick={openPdfExport}>
+                <FileDown className="h-4 w-4 mr-1.5" />
+                Export PDF
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/app/projects/${projectId}/documents/${document.id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Link>
+              </Button>
+            </>
+          )}
+          {!isRichText && selectedVersion.storage_path && (
+            <Button variant="outline" size="sm" onClick={download}>
+              <Download className="h-4 w-4 mr-1.5" />
+              Download
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Main content: viewer + sidebar */}
+      {/* Main: viewer + sidebar */}
       <div className="flex gap-4 h-[calc(100vh-14rem)]">
         {/* Viewer panel */}
         <div className="flex-1 overflow-hidden rounded-lg border bg-muted/30 flex flex-col">
-          {/* Toolbar (images only) */}
-          {isImage && !isLoadingUrl && !urlError && signedUrl && (
+          {/* Zoom toolbar — images only */}
+          {isImage && !isLoading && !loadError && content?.type === "file" && content.url && (
             <div className="flex items-center gap-1 px-3 py-1.5 border-b bg-background shrink-0">
               <span className="text-xs text-muted-foreground mr-2">
                 {Math.round(zoom * 100)}%
@@ -214,54 +235,55 @@ export function DocumentViewerClient({
             </div>
           )}
 
-          {/* Viewer content */}
+          {/* Content area */}
           <div className="flex-1 overflow-auto">
-            {isLoadingUrl ? (
+            {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                   <span className="text-sm">Loading…</span>
                 </div>
               </div>
-            ) : urlError ? (
+            ) : loadError ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                <p className="text-sm">{urlError}</p>
-                <Button variant="outline" size="sm" onClick={retryLoad}>
+                <p className="text-sm">{loadError}</p>
+                <Button variant="outline" size="sm" onClick={retry}>
                   <RefreshCw className="h-4 w-4 mr-1.5" />
                   Retry
                 </Button>
               </div>
+            ) : isRichText && content?.type === "rich_text" ? (
+              <div
+                className="tiptap-content p-6 max-w-3xl mx-auto"
+                dangerouslySetInnerHTML={{ __html: content.html }}
+              />
             ) : isDwg ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                 <FileDown className="h-10 w-10" />
-                <p className="text-sm font-medium">DWG files cannot be previewed in the browser.</p>
+                <p className="text-sm font-medium">
+                  DWG files cannot be previewed in the browser.
+                </p>
                 <Button variant="outline" size="sm" onClick={download}>
                   <Download className="h-4 w-4 mr-1.5" />
                   Download to view
                 </Button>
               </div>
-            ) : isPdf && signedUrl ? (
+            ) : isPdf && content?.type === "file" && content.url ? (
               <iframe
-                key={signedUrl}
-                src={signedUrl}
+                key={content.url}
+                src={content.url}
                 title={document.title}
                 className="w-full h-full border-0"
               />
-            ) : isImage && signedUrl ? (
+            ) : isImage && content?.type === "file" && content.url ? (
               <div className="flex items-start justify-center p-6 min-h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  key={signedUrl}
-                  src={signedUrl}
+                  key={content.url}
+                  src={content.url}
                   alt={document.title}
-                  style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top center",
-                  }}
-                  className={cn(
-                    "max-w-full transition-transform duration-150",
-                    zoomIndex !== 2 && "cursor-zoom-out",
-                  )}
+                  style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+                  className="max-w-full transition-transform duration-150"
                 />
               </div>
             ) : (
@@ -274,7 +296,6 @@ export function DocumentViewerClient({
 
         {/* Sidebar */}
         <aside className="w-64 shrink-0 flex flex-col gap-3 overflow-y-auto">
-          {/* Version history */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Version history</CardTitle>
@@ -291,13 +312,21 @@ export function DocumentViewerClient({
                       : "hover:bg-muted",
                   )}
                 >
-                  <div className="font-medium">Version {v.version_number}</div>
+                  <div className="font-medium flex items-center gap-1.5">
+                    Version {v.version_number}
+                    <span
+                      className={cn(
+                        "text-[10px] rounded px-1 py-0.5",
+                        v.id === selectedVersionId ? "bg-white/20" : "bg-muted",
+                      )}
+                    >
+                      {v.content_type === "rich_text" ? "text" : "file"}
+                    </span>
+                  </div>
                   <div
                     className={cn(
                       "mt-0.5",
-                      v.id === selectedVersionId
-                        ? "text-white/70"
-                        : "text-muted-foreground",
+                      v.id === selectedVersionId ? "text-white/70" : "text-muted-foreground",
                     )}
                   >
                     {v.uploaderName}
@@ -305,9 +334,7 @@ export function DocumentViewerClient({
                   <div
                     className={cn(
                       "mt-0.5",
-                      v.id === selectedVersionId
-                        ? "text-white/60"
-                        : "text-muted-foreground/80",
+                      v.id === selectedVersionId ? "text-white/60" : "text-muted-foreground/80",
                     )}
                   >
                     {formatDate(v.created_at)}
@@ -319,7 +346,6 @@ export function DocumentViewerClient({
 
           <Separator />
 
-          {/* Metadata */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Details</CardTitle>
