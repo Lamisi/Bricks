@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import {
   ChevronLeft,
   Download,
@@ -255,7 +256,15 @@ export function DocumentViewerClient({
             ) : isRichText && content?.type === "rich_text" ? (
               <div
                 className="tiptap-content p-6 max-w-3xl mx-auto"
-                dangerouslySetInnerHTML={{ __html: content.html }}
+                // HTML is generated server-side from Tiptap JSON (no raw HTML nodes).
+                // DOMPurify sanitizes client-side as defence-in-depth against any
+                // unexpected content that may reach this component.
+                dangerouslySetInnerHTML={{
+                  __html:
+                    typeof window !== "undefined"
+                      ? DOMPurify.sanitize(content.html)
+                      : content.html,
+                }}
               />
             ) : isDwg ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
