@@ -522,6 +522,50 @@ export type Database = {
           },
         ]
       }
+      suggestion_logs: {
+        Row: {
+          id: string
+          document_id: string
+          document_version_id: string | null
+          user_id: string
+          suggestion_type: string
+          description: string
+          recommended_fix: string
+          action: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          document_version_id?: string | null
+          user_id: string
+          suggestion_type: string
+          description: string
+          recommended_fix: string
+          action: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          document_version_id?: string | null
+          user_id?: string
+          suggestion_type?: string
+          description?: string
+          recommended_fix?: string
+          action?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string

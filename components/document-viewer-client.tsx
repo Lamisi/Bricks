@@ -8,6 +8,7 @@ import {
   FileDown,
   Pencil,
   RefreshCw,
+  Sparkles,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -194,6 +195,12 @@ export function DocumentViewerClient({
               <Button variant="ghost" size="sm" onClick={openPdfExport}>
                 <FileDown className="h-4 w-4 mr-1.5" />
                 Export PDF
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/app/projects/${projectId}/documents/${document.id}/edit?suggestions=1`}>
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                  AI suggestions
+                </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/app/projects/${projectId}/documents/${document.id}/edit`}>

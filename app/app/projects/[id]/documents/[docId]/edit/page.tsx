@@ -6,10 +6,13 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 
 export default async function EditDocumentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; docId: string }>;
+  searchParams: Promise<{ suggestions?: string }>;
 }) {
   const { id: projectId, docId } = await params;
+  const { suggestions } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -43,7 +46,7 @@ export default async function EditDocumentPage({
   const admin = createAdminClient();
   const { data: version } = await admin
     .from("document_versions")
-    .select("rich_text_json")
+    .select("id, rich_text_json")
     .eq("document_id", docId)
     .eq("content_type", "rich_text")
     .order("version_number", { ascending: false })
@@ -56,6 +59,8 @@ export default async function EditDocumentPage({
       projectId={projectId}
       initialTitle={doc.title}
       initialContent={version?.rich_text_json ?? undefined}
+      initialVersionId={version?.id ?? null}
+      autoOpenSuggestions={suggestions === "1"}
     />
   );
 }
