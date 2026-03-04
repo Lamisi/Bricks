@@ -34,6 +34,11 @@ export default async function EditDocumentPage({
 
   if (!doc) return notFound();
 
+  // Approved documents are immutable — redirect to viewer
+  if (doc.status === "approved") {
+    redirect(`/app/projects/${projectId}/documents/${docId}`);
+  }
+
   // Fetch latest rich_text version (if any)
   const admin = createAdminClient();
   const { data: version } = await admin

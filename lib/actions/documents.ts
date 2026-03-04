@@ -59,6 +59,17 @@ export async function saveDocumentVersion(
 
   const admin = createAdminClient();
 
+  // Approved documents are immutable — no new versions allowed
+  const { data: docCheck } = await admin
+    .from("documents")
+    .select("status")
+    .eq("id", docId)
+    .single();
+
+  if (docCheck?.status === "approved") {
+    return { error: "Approved documents cannot be edited. Create a new version." };
+  }
+
   const { data: latestVersion } = await admin
     .from("document_versions")
     .select("version_number")
