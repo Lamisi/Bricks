@@ -98,6 +98,7 @@ export default async function DocumentPage({
       canEdit={canEdit}
       currentUserId={user.id}
       userRole={role ?? "carpenter"}
+      canDismissCompliance={role === "admin" || role === "architect"}
     />
   );
 }

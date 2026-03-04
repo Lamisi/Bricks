@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      compliance_checks: {
+        Row: {
+          id: string
+          document_version_id: string
+          status: string
+          model: string | null
+          duration_ms: number | null
+          error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          document_version_id: string
+          status?: string
+          model?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          document_version_id?: string
+          status?: string
+          model?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_checks_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_issues: {
+        Row: {
+          id: string
+          compliance_check_id: string
+          severity: string
+          description: string
+          source_reference: string | null
+          dismissed_at: string | null
+          dismissed_by: string | null
+          dismiss_reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          compliance_check_id: string
+          severity: string
+          description: string
+          source_reference?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismiss_reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          compliance_check_id?: string
+          severity?: string
+          description?: string
+          source_reference?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismiss_reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_issues_compliance_check_id_fkey"
+            columns: ["compliance_check_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_checks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           body: string

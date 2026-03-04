@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CommentThread } from "@/components/comment-thread";
+import { ComplianceReport } from "@/components/compliance-report";
 import { DocumentStatusActions } from "@/components/document-status-actions";
 import type { ProjectRole, DocumentStatus } from "@/lib/auth/rbac";
 
@@ -82,6 +83,7 @@ interface DocumentViewerClientProps {
   canEdit: boolean;
   currentUserId: string;
   userRole: ProjectRole;
+  canDismissCompliance: boolean;
 }
 
 const DWG_MIMES = new Set([
@@ -103,6 +105,7 @@ export function DocumentViewerClient({
   canEdit,
   currentUserId,
   userRole,
+  canDismissCompliance,
 }: DocumentViewerClientProps) {
   const [selectedVersionId, setSelectedVersionId] = useState(initialVersionId);
   const [content, setContent] = useState<LoadedContent>(initialContent);
@@ -408,6 +411,16 @@ export function DocumentViewerClient({
           </Card>
         </aside>
       </div>
+      {/* Compliance report */}
+      <div className="space-y-1.5">
+        <h2 className="text-sm font-semibold">Compliance Check</h2>
+        <ComplianceReport
+          versionId={selectedVersionId}
+          projectId={projectId}
+          canDismiss={canDismissCompliance}
+        />
+      </div>
+
       {/* Comments section */}
       <CommentThread
         versionId={selectedVersionId}
