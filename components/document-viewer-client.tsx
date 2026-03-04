@@ -12,7 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

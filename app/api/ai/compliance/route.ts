@@ -73,6 +73,14 @@ export async function POST(request: Request) {
   const role = await getUserProjectRole(supabase, projectId);
   if (!role) return NextResponse.json({ error: "Not a project member" }, { status: 403 });
 
+  // Get user's preferred language for AI responses
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("language")
+    .eq("id", user.id)
+    .single();
+  const language = profile?.language === "en" ? "en" : "no";
+
   const admin = createAdminClient();
 
   // Check if an active check already exists (pending or running)
@@ -101,7 +109,7 @@ export async function POST(request: Request) {
 
   // Run the check synchronously — Vercel Pro timeout is 60s which covers typical docs.
   // The client shows a loading state and polls if needed.
-  await runComplianceCheck(check.id);
+  await runComplianceCheck(check.id, language);
 
   // Return final state
   const { data: finalCheck } = await admin
