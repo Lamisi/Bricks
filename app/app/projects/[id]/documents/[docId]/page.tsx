@@ -96,6 +96,7 @@ export default async function DocumentPage({
       initialContent={initialContent}
       projectId={projectId}
       canEdit={canEdit}
+      currentUserId={user.id}
     />
   );
 }

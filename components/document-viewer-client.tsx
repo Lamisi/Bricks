@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { CommentThread } from "@/components/comment-thread";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -77,6 +78,7 @@ interface DocumentViewerClientProps {
   initialContent: InitialContent;
   projectId: string;
   canEdit: boolean;
+  currentUserId: string;
 }
 
 const DWG_MIMES = new Set([
@@ -96,6 +98,7 @@ export function DocumentViewerClient({
   initialContent,
   projectId,
   canEdit,
+  currentUserId,
 }: DocumentViewerClientProps) {
   const [selectedVersionId, setSelectedVersionId] = useState(initialVersionId);
   const [content, setContent] = useState<LoadedContent>(initialContent);
@@ -197,7 +200,7 @@ export function DocumentViewerClient({
       </div>
 
       {/* Main: viewer + sidebar */}
-      <div className="flex gap-4 h-[calc(100vh-14rem)]">
+      <div className="flex gap-4 h-[calc(100vh-16rem)]">
         {/* Viewer panel */}
         <div className="flex-1 overflow-hidden rounded-lg border bg-muted/30 flex flex-col">
           {/* Zoom toolbar — images only */}
@@ -389,6 +392,14 @@ export function DocumentViewerClient({
           </Card>
         </aside>
       </div>
+      {/* Comments section */}
+      <CommentThread
+        versionId={selectedVersionId}
+        projectId={projectId}
+        docId={document.id}
+        currentUserId={currentUserId}
+        canEdit={canEdit}
+      />
     </div>
   );
 }
