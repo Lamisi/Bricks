@@ -257,14 +257,9 @@ export function DocumentViewerClient({
               <div
                 className="tiptap-content p-6 max-w-3xl mx-auto"
                 // HTML is generated server-side from Tiptap JSON (no raw HTML nodes).
-                // DOMPurify sanitizes client-side as defence-in-depth against any
-                // unexpected content that may reach this component.
-                dangerouslySetInnerHTML={{
-                  __html:
-                    typeof window !== "undefined"
-                      ? DOMPurify.sanitize(content.html)
-                      : content.html,
-                }}
+                // DOMPurify sanitizes as defence-in-depth; it returns the input
+                // unchanged in environments without a DOM (SSR).
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content.html) }}
               />
             ) : isDwg ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
