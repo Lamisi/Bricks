@@ -234,12 +234,107 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_sources: {
+        Row: {
+          chunk_count: number
+          created_at: string
+          created_by: string
+          description: string | null
+          file_path: string | null
+          id: string
+          language: Database["public"]["Enums"]["language_code"]
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          chunk_count?: number
+          created_at?: string
+          created_by: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          language?: Database["public"]["Enums"]["language_code"]
+          source_type: string
+          status?: string
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          chunk_count?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          language?: Database["public"]["Enums"]["language_code"]
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      embeddings: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          embedding_model: string
+          id: string
+          knowledge_source_id: string
+          language: Database["public"]["Enums"]["language_code"]
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          embedding_model?: string
+          id?: string
+          knowledge_source_id: string
+          language: Database["public"]["Enums"]["language_code"]
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          embedding_model?: string
+          id?: string
+          knowledge_source_id?: string
+          language?: Database["public"]["Enums"]["language_code"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_knowledge_source_id_fkey"
+            columns: ["knowledge_source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_admin: boolean
           language: Database["public"]["Enums"]["language_code"]
           updated_at: string
         }
@@ -248,6 +343,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_admin?: boolean
           language?: Database["public"]["Enums"]["language_code"]
           updated_at?: string
         }
@@ -256,6 +352,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean
           language?: Database["public"]["Enums"]["language_code"]
           updated_at?: string
         }
@@ -448,6 +545,22 @@ export type Database = {
         Returns: Database["public"]["Enums"]["project_role"]
       }
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
+      is_global_admin: { Args: Record<string, never>; Returns: boolean }
+      match_documents: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          filter_language?: string | null
+        }
+        Returns: {
+          id: string
+          content: string
+          language: string
+          similarity: number
+          knowledge_source_id: string
+          knowledge_source_title: string
+        }[]
+      }
     }
     Enums: {
       document_content_type: "file" | "rich_text"
