@@ -20,6 +20,7 @@ import {
   List,
   ListOrdered,
   Redo2,
+  Sparkles,
   Table as TableIcon,
   Undo2,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveDocumentVersion } from "@/lib/actions/documents";
+import { SuggestionsPanel } from "@/components/suggestions-panel";
 import type { Json } from "@/types/database";
 
 const AUTO_SAVE_MS = 30_000;
@@ -34,11 +36,12 @@ const AUTO_SAVE_MS = 30_000;
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface RichTextEditorProps {
-  /** Undefined = new document (no DB record yet, title required). */
   docId: string;
   projectId: string;
   initialTitle: string;
   initialContent?: Json;
+  initialVersionId?: string | null;
+  autoOpenSuggestions?: boolean;
 }
 
 function ToolbarButton({
@@ -82,6 +85,8 @@ export function RichTextEditor({
   projectId,
   initialTitle,
   initialContent,
+  initialVersionId,
+  autoOpenSuggestions = false,
 }: RichTextEditorProps) {
   const router = useRouter();
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +95,10 @@ export function RichTextEditor({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(autoOpenSuggestions);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(
+    initialVersionId ?? null,
+  );
 
   // Refs to avoid stale closures in the auto-save interval
   const isDirtyRef = useRef(false);
@@ -130,6 +139,7 @@ export function RichTextEditor({
       setLastSaved(new Date());
       setIsDirty(false);
       isDirtyRef.current = false;
+      if (result.versionId) setCurrentVersionId(result.versionId);
     }
   }, [editor, docId, projectId]);
 
@@ -182,7 +192,9 @@ export function RichTextEditor({
             : "";
 
   return (
-    <div className="flex flex-col gap-0 rounded-lg border overflow-hidden">
+    <div className="flex gap-0 rounded-lg border overflow-hidden h-[calc(100vh-8rem)]">
+      {/* Main editor column */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
       {/* Document title */}
       <div className="border-b px-4 py-3">
         <Input
@@ -296,6 +308,16 @@ export function RichTextEditor({
             if (file) handleImageUpload(file);
           }}
         />
+
+        <Divider />
+
+        <ToolbarButton
+          title="AI suggestions"
+          active={showSuggestions}
+          onClick={() => setShowSuggestions((v) => !v)}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+        </ToolbarButton>
       </div>
 
       {/* Editor area */}
@@ -346,6 +368,29 @@ export function RichTextEditor({
           </Button>
         </div>
       </div>
+      </div>{/* end main editor column */}
+
+      {/* Suggestions panel */}
+      {showSuggestions && currentVersionId && (
+        <div className="w-80 shrink-0 flex flex-col overflow-hidden border-l">
+          <SuggestionsPanel
+            docId={docId}
+            versionId={currentVersionId}
+            projectId={projectId}
+            editor={editor}
+            onClose={() => setShowSuggestions(false)}
+          />
+        </div>
+      )}
+      {showSuggestions && !currentVersionId && (
+        <div className="w-80 shrink-0 flex flex-col items-center justify-center gap-2 border-l p-6 text-center text-sm text-muted-foreground">
+          <Sparkles className="h-8 w-8 opacity-30" />
+          <p>Save your document first to get AI suggestions.</p>
+          <Button size="sm" onClick={save} disabled={saveStatus === "saving"}>
+            {saveStatus === "saving" ? "Saving…" : "Save now"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
