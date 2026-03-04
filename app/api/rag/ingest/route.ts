@@ -112,10 +112,10 @@ export async function POST(request: Request) {
           embeddings = await embedBatch(batch);
           break;
         } catch (err) {
-          console.error(`Embedding batch [${batchStart}] attempt ${attempt} failed:`, err);
+          console.error("Embedding batch attempt failed:", { batchStart, attempt }, err);
           if (attempt === MAX_RETRIES) {
             failCount += batch.length;
-            console.error(`Skipping batch [${batchStart}] after ${MAX_RETRIES} retries`);
+            console.error("Skipping batch after max retries:", { batchStart, maxRetries: MAX_RETRIES });
           }
         }
       }
