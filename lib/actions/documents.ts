@@ -104,3 +104,33 @@ export async function saveDocumentVersion(
   revalidatePath(`/app/projects/${projectId}/documents/${docId}`);
   return { versionId: version.id, versionNumber: nextVersion };
 }
+
+// ---------------------------------------------------------------------------
+// createDocumentForGeneration
+// Creates an empty document record to receive AI-generated content.
+// Returns { docId } so the client can start streaming generation.
+// ---------------------------------------------------------------------------
+export async function createDocumentForGeneration(
+  projectId: string,
+  title: string,
+): Promise<{ docId?: string; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  await requireProjectRole(supabase, projectId, "admin", "architect");
+
+  const admin = createAdminClient();
+  const { data: doc, error } = await admin
+    .from("documents")
+    .insert({ project_id: projectId, title, created_by: user.id, status: "draft" })
+    .select("id")
+    .single();
+
+  if (error || !doc) return { error: "Could not create document" };
+
+  revalidatePath(`/app/projects/${projectId}`);
+  return { docId: doc.id };
+}
