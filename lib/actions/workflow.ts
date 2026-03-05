@@ -11,6 +11,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { fireOutboundWebhooks } from "@/lib/webhooks/outbound";
+import { notifyMany } from "@/lib/notifications/notify";
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: "Draft",
@@ -169,11 +170,10 @@ async function sendWorkflowNotifications({
       .filter((id) => id !== actorId);
 
     if (recipientIds.length > 0) {
-      const notifClient = admin as any;
-      await notifClient.from("notifications").insert(
+      await notifyMany(
         recipientIds.map((userId: string) => ({
-          user_id: userId,
-          type: "status_change",
+          userId,
+          type: "status_change" as const,
           title: `"${docTitle}" is ready for review`,
           body: `${actorName} submitted the document for review.`,
           link,
@@ -198,10 +198,9 @@ async function sendWorkflowNotifications({
         ? `${actorName} approved the document.`
         : `${actorName} requested changes${note?.trim() ? `: ${note.trim().slice(0, 200)}` : "."}`;
 
-    const notifClient = admin as any;
-    await notifClient.from("notifications").insert([
+    await notifyMany([
       {
-        user_id: documentCreatedBy,
+        userId: documentCreatedBy,
         type: "status_change",
         title,
         body,

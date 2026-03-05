@@ -5,6 +5,7 @@ import { PDFParse } from "pdf-parse";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { matchDocuments } from "@/lib/ai/rag";
 import { getClaudeModel, DEFAULT_MODEL } from "@/lib/ai/claude";
+import { notify } from "@/lib/notifications/notify";
 import type { Json } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -81,7 +82,7 @@ export async function runComplianceCheck(
   const { data: check } = await admin
     .from("compliance_checks")
     .select(
-      "id, document_version_id, document_versions(content_type, rich_text_json, storage_path, mime_type, documents(project_id))",
+      "id, document_version_id, document_versions(content_type, rich_text_json, storage_path, mime_type, documents(project_id, id, title, created_by))",
     )
     .eq("id", checkId)
     .single();
@@ -101,7 +102,7 @@ export async function runComplianceCheck(
     rich_text_json: Json | null;
     storage_path: string | null;
     mime_type: string | null;
-    documents: { project_id: string } | null;
+    documents: { project_id: string; id: string; title: string; created_by: string } | null;
   } | null;
 
   if (!version) {
@@ -206,6 +207,26 @@ export async function runComplianceCheck(
       issueCount: object.issues.length,
       durationMs: duration,
     });
+
+    // Notify document uploader
+    const docOwner = version.documents?.created_by;
+    const docTitle = version.documents?.title ?? "your document";
+    const docId = version.documents?.id;
+    const projectId = version.documents?.project_id;
+    if (docOwner && docId && projectId) {
+      void notify({
+        userId: docOwner,
+        type: "compliance_complete",
+        title: `Compliance check complete for "${docTitle}"`,
+        body:
+          object.issues.length === 0
+            ? "No compliance issues found."
+            : `${object.issues.length} issue${object.issues.length === 1 ? "" : "s"} found.`,
+        link: `/app/projects/${projectId}/documents/${docId}`,
+      }).catch((err) => {
+        console.error("Compliance notification error:", err);
+      });
+    }
   } catch (err) {
     const duration = Date.now() - startTime;
     console.error("Compliance check Claude error:", checkId, err);
