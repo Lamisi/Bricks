@@ -21,6 +21,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | i18n | next-intl (Norwegian Bokmål `no`, English `en`) |
 | Deployment | Vercel (frontend + API routes) + Supabase (hosted) |
 
+## Local Development Setup
+
+> Prerequisites: Docker Desktop running, Node 20+ (or 25 with workarounds below), Supabase CLI at `~/.local/bin/supabase`.
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Generate a WEBHOOK_ENCRYPTION_KEY
+openssl rand -hex 32
+
+# 3. Create your local env file
+cp .env.local.example .env.local
+# Edit .env.local — see step 5 for Supabase values
+
+# 4. Start local Supabase stack (Docker must be running)
+supabase start
+# Prints: API URL, anon key, service_role key → paste into .env.local
+
+# 5. Apply all migrations + seed demo data
+supabase db reset
+# This runs every migration in supabase/migrations/ then loads supabase/seed.sql
+
+# 6. Start the app
+npm run dev   # → http://localhost:3000
+```
+
+### Demo accounts (all password: `Password1!`)
+
+| Email | Role |
+|---|---|
+| `admin@bricks.local` | Admin — full access |
+| `architect@bricks.local` | Architect — create & upload docs |
+| `engineer@bricks.local` | Civil Engineer — review & approve |
+| `carpenter@bricks.local` | Carpenter — read-only |
+
+### Supabase local ports
+
+| Service | URL |
+|---|---|
+| API / PostgREST | http://127.0.0.1:54321 |
+| Studio (DB GUI) | http://127.0.0.1:54323 |
+| Inbucket (email) | http://127.0.0.1:54324 |
+
+### Reset and re-seed at any time
+```bash
+supabase db reset   # wipes DB, re-runs all migrations, re-seeds
+```
+
 ## Commands
 
 ```bash
