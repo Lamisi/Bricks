@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      integrations: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          type: string
+          webhook_url: string
+          webhook_secret_enc: string
+          status: string
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          type?: string
+          webhook_url: string
+          webhook_secret_enc: string
+          status?: string
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          type?: string
+          webhook_url?: string
+          webhook_secret_enc?: string
+          status?: string
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integrations_log: {
+        Row: {
+          id: string
+          integration_id: string | null
+          project_id: string
+          direction: string
+          event_type: string
+          status: string
+          http_status_code: number | null
+          destination_url: string | null
+          source_ip: string | null
+          payload_hash: string | null
+          attempt: number
+          error: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          integration_id?: string | null
+          project_id: string
+          direction: string
+          event_type: string
+          status: string
+          http_status_code?: number | null
+          destination_url?: string | null
+          source_ip?: string | null
+          payload_hash?: string | null
+          attempt?: number
+          error?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          integration_id?: string | null
+          project_id?: string
+          direction?: string
+          event_type?: string
+          status?: string
+          http_status_code?: number | null
+          destination_url?: string | null
+          source_ip?: string | null
+          payload_hash?: string | null
+          attempt?: number
+          error?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       compliance_checks: {
         Row: {
           id: string

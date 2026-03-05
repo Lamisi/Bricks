@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/rbac";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { fireOutboundWebhooks } from "@/lib/webhooks/outbound";
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: "Draft",
@@ -82,6 +83,20 @@ export async function transitionDocumentStatus(
   if (auditError) {
     console.error("Audit log write failed:", auditError);
   }
+
+  // Non-blocking outbound webhooks
+  void fireOutboundWebhooks({
+    event: `document.${newStatus}`,
+    project_id: projectId,
+    document_id: docId,
+    document_title: doc.title,
+    from_status: fromStatus,
+    to_status: newStatus,
+    actor_id: user.id,
+    timestamp: new Date().toISOString(),
+  }).catch((err) => {
+    console.error("Outbound webhook failed:", err);
+  });
 
   // Non-blocking notifications
   void sendWorkflowNotifications({
