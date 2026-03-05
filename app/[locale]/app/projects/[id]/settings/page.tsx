@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { IntegrationPanel } from "@/components/integration-panel";
 import type { ProjectRole } from "@/lib/auth/rbac";
 
 type Project = {
@@ -166,6 +167,21 @@ export default function ProjectSettingsPage({
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      <Separator />
+
+      {/* Integrations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Integrations</CardTitle>
+          <CardDescription>
+            Configure outbound webhooks. Events are signed with HMAC-SHA256.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <IntegrationPanel projectId={projectId!} isAdmin={myRole === "admin"} />
+        </CardContent>
       </Card>
 
       <Separator />
