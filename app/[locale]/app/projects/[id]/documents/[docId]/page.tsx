@@ -10,15 +10,15 @@ import { DocumentViewerClient } from "@/components/document-viewer-client";
 export default async function DocumentPage({
   params,
 }: {
-  params: Promise<{ id: string; docId: string }>;
+  params: Promise<{ locale: string; id: string; docId: string }>;
 }) {
-  const { id: projectId, docId } = await params;
+  const { locale, id: projectId, docId } = await params;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/sign-in" });
+  if (!user) redirect({ href: "/sign-in", locale });
 
   // RLS enforces project membership — returns null if user is not a member
   const { data: doc } = await supabase

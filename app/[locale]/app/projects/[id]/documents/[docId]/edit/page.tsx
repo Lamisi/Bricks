@@ -9,23 +9,23 @@ export default async function EditDocumentPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string; docId: string }>;
+  params: Promise<{ locale: string; id: string; docId: string }>;
   searchParams: Promise<{ suggestions?: string }>;
 }) {
-  const { id: projectId, docId } = await params;
+  const { locale, id: projectId, docId } = await params;
   const { suggestions } = await searchParams;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/sign-in" });
+  if (!user) redirect({ href: "/sign-in", locale });
 
   // Only architects and admins can edit
   try {
     await requireProjectRole(supabase, projectId, "admin", "architect");
   } catch {
-    redirect({ href: `/app/projects/${projectId}/documents/${docId}` });
+    redirect({ href: `/app/projects/${projectId}/documents/${docId}`, locale });
   }
 
   // Fetch document (RLS enforces project membership)
@@ -40,7 +40,7 @@ export default async function EditDocumentPage({
 
   // Approved documents are immutable — redirect to viewer
   if (doc.status === "approved") {
-    redirect({ href: `/app/projects/${projectId}/documents/${docId}` });
+    redirect({ href: `/app/projects/${projectId}/documents/${docId}`, locale });
   }
 
   // Fetch latest rich_text version (if any)

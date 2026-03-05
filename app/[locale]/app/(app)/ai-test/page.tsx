@@ -1,10 +1,12 @@
+import { getLocale } from "next-intl/server";
 import { redirect } from "@/lib/navigation";
 import { AiTestPanel } from "@/components/ai-test-panel";
 
 // This page is only accessible in development — it never ships to production.
-export default function AiTestPage() {
+export default async function AiTestPage() {
   if (process.env.NODE_ENV === "production") {
-    redirect({ href: "/app" });
+    const locale = await getLocale();
+    redirect({ href: "/app", locale });
   }
 
   return (

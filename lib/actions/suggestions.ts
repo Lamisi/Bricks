@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "next-intl/server";
 import { redirect } from "@/lib/navigation";
 
 type SuggestionAction = "accepted" | "dismissed";
@@ -18,7 +19,8 @@ export async function logSuggestionAction(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/sign-in" });
+  const locale = await getLocale();
+  if (!user) redirect({ href: "/sign-in", locale });
 
   await supabase.from("suggestion_logs").insert({
     document_id: documentId,

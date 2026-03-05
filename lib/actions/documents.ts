@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,12 +21,13 @@ export async function createRichTextDocument(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/sign-in" });
+  const locale = await getLocale();
+  if (!user) redirect({ href: "/sign-in", locale });
 
   await requireProjectRole(supabase, projectId, "admin", "architect");
 
   const title = (formData.get("title") as string).trim();
-  if (!title) redirect({ href: `/app/projects/${projectId}/documents/new` });
+  if (!title) redirect({ href: `/app/projects/${projectId}/documents/new`, locale });
 
   const admin = createAdminClient();
   const { data: doc, error } = await admin
@@ -34,14 +36,14 @@ export async function createRichTextDocument(
     .select("id")
     .single();
 
-  if (error || !doc) redirect({ href: `/app/projects/${projectId}/documents/new` });
+  if (error || !doc) redirect({ href: `/app/projects/${projectId}/documents/new`, locale });
 
   void embedDocument(doc.id, title).catch((err) => {
     console.error("Doc embed failed:", err);
   });
 
   revalidatePath(`/app/projects/${projectId}`);
-  redirect({ href: `/app/projects/${projectId}/documents/${doc.id}/edit` });
+  redirect({ href: `/app/projects/${projectId}/documents/${doc.id}/edit`, locale });
 }
 
 // ---------------------------------------------------------------------------

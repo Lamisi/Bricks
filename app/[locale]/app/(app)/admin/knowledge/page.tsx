@@ -1,15 +1,16 @@
+import { getLocale } from "next-intl/server";
 import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { KnowledgeSourceManager } from "@/components/knowledge-source-manager";
 
 export default async function KnowledgePage() {
-  const supabase = await createClient();
+  const [supabase, locale] = await Promise.all([createClient(), getLocale()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect({ href: "/sign-in" });
+  if (!user) redirect({ href: "/sign-in", locale });
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -17,7 +18,7 @@ export default async function KnowledgePage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_admin) redirect({ href: "/app" });
+  if (!profile?.is_admin) redirect({ href: "/app", locale });
 
   const admin = createAdminClient();
   const { data: sources } = await admin
