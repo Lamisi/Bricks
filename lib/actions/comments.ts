@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserProjectRole } from "@/lib/auth/rbac";
+import { notify, notifyMany } from "@/lib/notifications/notify";
 
 /** Strip HTML tags and trim whitespace — comments are stored as plain text. */
 function sanitizeBody(input: string): string {
@@ -47,46 +48,58 @@ export async function postComment(
 
   if (error || !comment) return { error: "Could not save comment" };
 
+  // Fetch author name + doc owner once for all notifications below
+  const [authorResult, docResult] = await Promise.all([
+    admin.from("profiles").select("full_name").eq("id", user.id).single(),
+    admin.from("documents").select("created_by").eq("id", docId).single(),
+  ]);
+  const authorName = authorResult.data?.full_name ?? "Someone";
+  const docOwnerId = docResult.data?.created_by ?? null;
+
   // ── @mention detection ──────────────────────────────────────────────────
   // Match @Word patterns (single token) against project members' first names.
   const mentionTokens = Array.from(clean.matchAll(/@(\w+)/g)).map((m) =>
     m[1].toLowerCase(),
   );
 
+  let mentionedIds: string[] = [];
   if (mentionTokens.length > 0) {
     const { data: members } = await admin
       .from("project_members")
       .select("user_id, profiles(full_name)")
       .eq("project_id", projectId);
 
-    const authorProfile = await admin
-      .from("profiles")
-      .select("full_name")
-      .eq("id", user.id)
-      .single();
-
-    const authorName = authorProfile.data?.full_name ?? "Someone";
-
-    const mentionedIds = (members ?? [])
+    mentionedIds = (members ?? [])
       .filter((m) => {
         const profileData = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
         const firstName = (profileData?.full_name ?? "").split(" ")[0].toLowerCase();
         return mentionTokens.includes(firstName);
       })
       .map((m) => m.user_id)
-      .filter((id) => id !== user.id); // Don't notify yourself
+      .filter((id) => id !== user.id);
 
     if (mentionedIds.length > 0) {
-      await admin.from("notifications").insert(
+      await notifyMany(
         mentionedIds.map((userId) => ({
-          user_id: userId,
-          type: "mention",
+          userId,
+          type: "mention" as const,
           title: `${authorName} mentioned you in a comment`,
           body: clean.slice(0, 200),
           link: `/app/projects/${projectId}/documents/${docId}`,
         })),
       );
     }
+  }
+
+  // ── Notify doc owner of new comment (skip if they authored it or were already mentioned) ──
+  if (docOwnerId && docOwnerId !== user.id && !mentionedIds.includes(docOwnerId)) {
+    await notify({
+      userId: docOwnerId,
+      type: "comment_reply",
+      title: `New comment on your document`,
+      body: `${authorName}: ${clean.slice(0, 100)}`,
+      link: `/app/projects/${projectId}/documents/${docId}`,
+    });
   }
 
   revalidatePath(`/app/projects/${projectId}/documents/${docId}`);

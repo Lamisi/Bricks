@@ -5,6 +5,7 @@ import { signOut } from "@/lib/actions/auth";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { NotificationBell } from "@/components/notification-bell";
 import { Link } from "@/lib/navigation";
 
 export default async function AppLayout({
@@ -41,10 +42,17 @@ export default async function AppLayout({
               >
                 {t("projects")}
               </Link>
+              <Link
+                href="/app/settings"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md transition-colors"
+              >
+                Settings
+              </Link>
             </nav>
           </div>
 
           <div className="flex items-center gap-2">
+            <NotificationBell userId={user.id} />
             <LanguageSwitcher />
             <span className="hidden sm:block text-sm text-muted-foreground">
               {displayName}
