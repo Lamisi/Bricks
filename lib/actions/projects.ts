@@ -43,7 +43,7 @@ export async function createProject(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   const name = (formData.get("name") as string).trim();
   const description = (formData.get("description") as string | null)?.trim() ?? null;
@@ -93,7 +93,7 @@ export async function createProject(
   }
 
   revalidatePath("/app/projects");
-  redirect(`/app/projects/${projectId}`);
+  redirect({ href: `/app/projects/${projectId}` });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +138,7 @@ export async function archiveProject(projectId: string): Promise<void> {
     .eq("id", projectId);
 
   revalidatePath("/app/projects");
-  redirect("/app/projects");
+  redirect({ href: "/app/projects" });
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +222,7 @@ export async function joinProject(token: string): Promise<{ error?: string; proj
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   const admin = createAdminClient();
 

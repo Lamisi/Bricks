@@ -27,13 +27,13 @@ export default async function NewDocumentPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   // Only architects and admins can create documents
   try {
     await requireProjectRole(supabase, projectId, "admin", "architect");
   } catch {
-    redirect(`/app/projects/${projectId}`);
+    redirect({ href: `/app/projects/${projectId}` });
   }
 
   const t = await getTranslations("newDocument");

@@ -18,7 +18,7 @@ export async function logSuggestionAction(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   await supabase.from("suggestion_logs").insert({
     document_id: documentId,

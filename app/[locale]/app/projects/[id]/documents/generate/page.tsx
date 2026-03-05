@@ -14,12 +14,12 @@ export default async function GenerateDocumentPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   try {
     await requireProjectRole(supabase, projectId, "admin", "architect");
   } catch {
-    redirect(`/app/projects/${projectId}`);
+    redirect({ href: `/app/projects/${projectId}` });
   }
 
   return (

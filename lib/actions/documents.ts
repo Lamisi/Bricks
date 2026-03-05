@@ -20,12 +20,12 @@ export async function createRichTextDocument(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   await requireProjectRole(supabase, projectId, "admin", "architect");
 
   const title = (formData.get("title") as string).trim();
-  if (!title) redirect(`/app/projects/${projectId}/documents/new`);
+  if (!title) redirect({ href: `/app/projects/${projectId}/documents/new` });
 
   const admin = createAdminClient();
   const { data: doc, error } = await admin
@@ -34,14 +34,14 @@ export async function createRichTextDocument(
     .select("id")
     .single();
 
-  if (error || !doc) redirect(`/app/projects/${projectId}/documents/new`);
+  if (error || !doc) redirect({ href: `/app/projects/${projectId}/documents/new` });
 
   void embedDocument(doc.id, title).catch((err) => {
     console.error("Doc embed failed:", err);
   });
 
   revalidatePath(`/app/projects/${projectId}`);
-  redirect(`/app/projects/${projectId}/documents/${doc.id}/edit`);
+  redirect({ href: `/app/projects/${projectId}/documents/${doc.id}/edit` });
 }
 
 // ---------------------------------------------------------------------------

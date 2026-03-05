@@ -65,12 +65,12 @@ export async function signIn(
 
   revalidatePath("/", "layout");
   const redirectTo = formData.get("redirectTo") as string | null;
-  redirect(redirectTo ?? "/app");
+  redirect({ href: redirectTo ?? "/app" });
 }
 
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
-  redirect("/sign-in");
+  redirect({ href: "/sign-in" });
 }

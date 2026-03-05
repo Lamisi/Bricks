@@ -4,7 +4,7 @@ import { AiTestPanel } from "@/components/ai-test-panel";
 // This page is only accessible in development — it never ships to production.
 export default function AiTestPage() {
   if (process.env.NODE_ENV === "production") {
-    redirect("/app");
+    redirect({ href: "/app" });
   }
 
   return (

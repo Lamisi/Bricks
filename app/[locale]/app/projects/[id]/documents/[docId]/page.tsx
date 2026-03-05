@@ -18,7 +18,7 @@ export default async function DocumentPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   // RLS enforces project membership — returns null if user is not a member
   const { data: doc } = await supabase

@@ -19,7 +19,7 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in" });
 
   const [{ data: profile }, t] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),
