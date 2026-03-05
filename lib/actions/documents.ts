@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProjectRole } from "@/lib/auth/rbac";
+import { embedDocument } from "@/lib/search/embed-document";
 import type { Json } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,10 @@ export async function createRichTextDocument(
     .single();
 
   if (error || !doc) redirect(`/app/projects/${projectId}/documents/new`);
+
+  void embedDocument(doc.id, title).catch((err) => {
+    console.error("Doc embed failed:", err);
+  });
 
   revalidatePath(`/app/projects/${projectId}`);
   redirect(`/app/projects/${projectId}/documents/${doc.id}/edit`);
@@ -130,6 +135,10 @@ export async function createDocumentForGeneration(
     .single();
 
   if (error || !doc) return { error: "Could not create document" };
+
+  void embedDocument(doc.id, title).catch((err) => {
+    console.error("Doc embed failed:", err);
+  });
 
   revalidatePath(`/app/projects/${projectId}`);
   return { docId: doc.id };
