@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { AiTestPanel } from "@/components/ai-test-panel";
 
 // This page is only accessible in development — it never ships to production.

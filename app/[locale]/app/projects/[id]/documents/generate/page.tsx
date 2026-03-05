@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProjectRole } from "@/lib/auth/rbac";
 import { DocumentGenerator } from "@/components/document-generator";

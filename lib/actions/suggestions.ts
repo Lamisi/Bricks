@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 
 type SuggestionAction = "accepted" | "dismissed";
 type SuggestionType = "missing_section" | "unclear" | "non_compliant";
