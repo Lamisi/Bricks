@@ -2,55 +2,47 @@
 -- Bricks — Storage: documents bucket
 -- Migration: 20260303160000_storage_documents
 -- =============================================================================
--- Adds:
---   • Private "documents" storage bucket (50 MB limit, allowlisted MIME types)
---   • Storage RLS policies scoped to project membership / role
---
--- NOTE: Wrapped in a conditional block because during `supabase start` the
--- storage service initialises AFTER migrations run, so storage.buckets does
--- not yet exist. On subsequent `supabase db reset` runs (and on hosted
--- Supabase) the storage schema is present and the block executes fully.
+-- Uses EXECUTE for all storage.* references so PostgreSQL does not try to
+-- resolve those table names at compile time. During `supabase start` the
+-- storage schema does not yet exist; the block detects this and exits early.
+-- On `supabase db reset` and on hosted Supabase the storage schema is present
+-- and every statement runs normally.
 -- =============================================================================
 
 do $$
 begin
+  -- Exit early if the storage schema has not been initialised yet
   if not exists (
     select 1 from information_schema.schemata where schema_name = 'storage'
   ) then
-    raise notice 'storage schema not yet available — skipping storage migration (run supabase db reset after supabase start)';
+    raise notice 'storage schema not yet available — skipping (run: supabase db reset)';
     return;
   end if;
 
-  -- ---------------------------------------------------------------------------
-  -- Create private bucket
-  -- ---------------------------------------------------------------------------
-  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values (
-    'documents',
-    'documents',
-    false,
-    52428800, -- 50 MB
-    array[
-      'application/pdf',
-      'image/png',
-      'image/jpeg',
-      'image/svg+xml',
-      'image/vnd.dwg',
-      'application/acad',
-      'application/x-acad',
-      'application/dwg',
-      'application/x-dwg'
-    ]
-  )
-  on conflict (id) do nothing;
+  -- Create the private documents bucket
+  execute $s$
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    values (
+      'documents',
+      'documents',
+      false,
+      52428800,
+      array[
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/svg+xml',
+        'image/vnd.dwg',
+        'application/acad',
+        'application/x-acad',
+        'application/dwg',
+        'application/x-dwg'
+      ]
+    )
+    on conflict (id) do nothing
+  $s$;
 
-  -- ---------------------------------------------------------------------------
-  -- Storage RLS
-  -- Path layout: projects/{project_id}/documents/{doc_id}/{version}/{filename}
-  -- split_part(name, '/', 2) → project_id
-  -- ---------------------------------------------------------------------------
-
-  -- Project members can read files in their projects (needed for signed URL auth)
+  -- Project members can read files in their projects
   if not exists (
     select 1 from pg_policies
     where schemaname = 'storage' and tablename = 'objects'
@@ -84,7 +76,7 @@ begin
     $pol$;
   end if;
 
-  -- Only architects and admins can delete (e.g. rollback cleanup)
+  -- Only architects and admins can delete
   if not exists (
     select 1 from pg_policies
     where schemaname = 'storage' and tablename = 'objects'
