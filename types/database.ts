@@ -780,6 +780,44 @@ export type Database = {
           knowledge_source_title: string
         }[]
       }
+      search_documents: {
+        Args: {
+          query_text: string
+          filter_project?: string | null
+          filter_status?: string | null
+          filter_date_from?: string | null
+          filter_date_to?: string | null
+          result_limit?: number
+        }
+        Returns: {
+          document_id: string
+          title: string
+          description: string | null
+          status: string
+          project_id: string
+          project_name: string
+          updated_at: string
+          rank: number
+        }[]
+      }
+      search_documents_semantic: {
+        Args: {
+          query_embedding: string
+          filter_project?: string | null
+          filter_status?: string | null
+          result_limit?: number
+        }
+        Returns: {
+          document_id: string
+          title: string
+          description: string | null
+          status: string
+          project_id: string
+          project_name: string
+          updated_at: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       document_content_type: "file" | "rich_text"

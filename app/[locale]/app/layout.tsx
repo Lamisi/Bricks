@@ -6,6 +6,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationBell } from "@/components/notification-bell";
+import { GlobalSearch } from "@/components/global-search";
 import { Link } from "@/lib/navigation";
 
 export default async function AppLayout({
@@ -43,12 +44,22 @@ export default async function AppLayout({
                 {t("projects")}
               </Link>
               <Link
+                href="/app/search"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md transition-colors md:hidden"
+              >
+                Search
+              </Link>
+              <Link
                 href="/app/settings"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md transition-colors"
               >
                 Settings
               </Link>
             </nav>
+          </div>
+
+          <div className="hidden md:block w-64">
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-2">
