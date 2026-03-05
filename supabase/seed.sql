@@ -362,14 +362,13 @@ on conflict (id) do nothing;
 -- ---------------------------------------------------------------------------
 -- 11. Compliance check (completed, for the approved Foundation Report)
 -- ---------------------------------------------------------------------------
-insert into public.compliance_checks (id, document_version_id, status, model, duration_ms, created_by, created_at, updated_at)
+insert into public.compliance_checks (id, document_version_id, status, model, duration_ms, created_at, updated_at)
 values (
   '00000000-0000-0000-0000-000000000060',
   '00000000-0000-0000-0000-0000000000a1',
   'complete',
   'claude-sonnet-4-6',
   4823,
-  '00000000-0000-0000-0000-000000000002',
   now() - interval '13 days',
   now() - interval '13 days'
 )
