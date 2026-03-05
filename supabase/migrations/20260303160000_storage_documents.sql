@@ -11,11 +11,12 @@
 
 do $$
 begin
-  -- Exit early if the storage schema has not been initialised yet
+  -- Exit early if the storage service has not yet created its tables
   if not exists (
-    select 1 from information_schema.schemata where schema_name = 'storage'
+    select 1 from information_schema.tables
+    where table_schema = 'storage' and table_name = 'buckets'
   ) then
-    raise notice 'storage schema not yet available — skipping (run: supabase db reset)';
+    raise notice 'storage.buckets not yet available — skipping (run: supabase db reset)';
     return;
   end if;
 
