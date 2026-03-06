@@ -143,8 +143,8 @@
     "documents": {
       "title": "Dokumenter",
       "empty": "Ingen dokumenter ennå.",
-      "count_one": "{{count}} dokument",
-      "count_other": "{{count}} dokumenter",
+      "count_one": "{count} dokument",
+      "count_other": "{count} dokumenter",
       "newDocument": "Nytt dokument",
       "download": "Last ned",
       "statuses": {
@@ -157,8 +157,8 @@
     },
     "members": {
       "title": "Medlemmer",
-      "count_one": "{{count}} medlem i dette prosjektet",
-      "count_other": "{{count}} medlemmer i dette prosjektet"
+      "count_one": "{count} medlem i dette prosjektet",
+      "count_other": "{count} medlemmer i dette prosjektet"
     },
     "invite": {
       "title": "Inviter et medlem",

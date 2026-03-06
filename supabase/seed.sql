@@ -41,7 +41,7 @@ insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at,
   raw_app_meta_data, raw_user_meta_data, is_super_admin,
-  confirmation_token, recovery_token, email_change_token_new
+  confirmation_token, recovery_token, email_change, email_change_token_new
 )
 values
   (
@@ -53,7 +53,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Alex Admin"}',
-    false, '', '', ''
+    false, '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -64,7 +64,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Anna Architect"}',
-    false, '', '', ''
+    false, '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -75,7 +75,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Erik Engineer"}',
-    false, '', '', ''
+    false, '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -86,7 +86,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Carl Carpenter"}',
-    false, '', '', ''
+    false, '', '', '', ''
   )
 on conflict (id) do nothing;
 

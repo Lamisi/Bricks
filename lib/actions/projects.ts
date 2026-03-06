@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
+import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProjectRole } from "@/lib/auth/rbac";
@@ -43,7 +44,8 @@ export async function createProject(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const locale = await getLocale();
+  if (!user) redirect({ href: "/sign-in", locale });
 
   const name = (formData.get("name") as string).trim();
   const description = (formData.get("description") as string | null)?.trim() ?? null;
@@ -93,7 +95,7 @@ export async function createProject(
   }
 
   revalidatePath("/app/projects");
-  redirect(`/app/projects/${projectId}`);
+  redirect({ href: `/app/projects/${projectId}`, locale });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +140,8 @@ export async function archiveProject(projectId: string): Promise<void> {
     .eq("id", projectId);
 
   revalidatePath("/app/projects");
-  redirect("/app/projects");
+  const locale = await getLocale();
+  redirect({ href: "/app/projects", locale });
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +225,8 @@ export async function joinProject(token: string): Promise<{ error?: string; proj
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const locale = await getLocale();
+  if (!user) redirect({ href: "/sign-in", locale });
 
   const admin = createAdminClient();
 

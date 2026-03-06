@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createRichTextDocument } from "@/lib/actions/documents";
@@ -19,21 +19,21 @@ import { Link } from "@/lib/navigation";
 export default async function NewDocumentPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }) {
-  const { id: projectId } = await params;
+  const { locale, id: projectId } = await params;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in", locale });
 
   // Only architects and admins can create documents
   try {
     await requireProjectRole(supabase, projectId, "admin", "architect");
   } catch {
-    redirect(`/app/projects/${projectId}`);
+    redirect({ href: `/app/projects/${projectId}`, locale });
   }
 
   const t = await getTranslations("newDocument");

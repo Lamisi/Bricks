@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
+import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = {
@@ -64,13 +65,17 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
-  const redirectTo = formData.get("redirectTo") as string | null;
-  redirect(redirectTo ?? "/app");
+  const [locale, redirectTo] = await Promise.all([
+    getLocale(),
+    Promise.resolve(formData.get("redirectTo") as string | null),
+  ]);
+  redirect({ href: redirectTo ?? "/app", locale });
 }
 
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
-  redirect("/sign-in");
+  const locale = await getLocale();
+  redirect({ href: "/sign-in", locale });
 }

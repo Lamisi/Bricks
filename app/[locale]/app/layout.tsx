@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
+import { redirect } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { Logo } from "@/components/logo";
@@ -14,12 +14,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  const [supabase, locale] = await Promise.all([createClient(), getLocale()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/sign-in");
+  if (!user) redirect({ href: "/sign-in", locale });
 
   const [{ data: profile }, t] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),

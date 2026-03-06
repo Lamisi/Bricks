@@ -38,7 +38,8 @@ cp .env.local.example .env.local
 
 # 4. Start local Supabase stack (Docker must be running)
 supabase start
-# Prints: API URL, anon key, service_role key → paste into .env.local
+# CLI v2.75+ prints: API URL, Publishable key (anon), Secret key (service role) → paste into .env.local
+# edge_runtime is disabled in supabase/config.toml (corporate network blocks deno.land)
 
 # 5. Apply all migrations + seed demo data
 supabase db reset
@@ -73,7 +74,7 @@ supabase db reset   # wipes DB, re-runs all migrations, re-seeds
 ## Commands
 
 ```bash
-npm run dev          # Start development server (http://localhost:3000)
+npm run dev          # Start development server (http://localhost:3000) — Node v25 workaround applied
 npm run build        # Production build
 npm run lint         # ESLint (uses node_modules/eslint/bin/eslint.js directly — Node v25 workaround)
 npm run typecheck    # TypeScript check (uses node_modules/typescript/lib/tsc.js directly — Node v25 workaround)
