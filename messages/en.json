@@ -143,8 +143,8 @@
     "documents": {
       "title": "Documents",
       "empty": "No documents yet.",
-      "count_one": "{{count}} document",
-      "count_other": "{{count}} documents",
+      "count_one": "{count} document",
+      "count_other": "{count} documents",
       "newDocument": "New document",
       "download": "Download",
       "statuses": {
@@ -157,8 +157,8 @@
     },
     "members": {
       "title": "Members",
-      "count_one": "{{count}} member in this project",
-      "count_other": "{{count}} members in this project"
+      "count_one": "{count} member in this project",
+      "count_other": "{count} members in this project"
     },
     "invite": {
       "title": "Invite a member",

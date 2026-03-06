@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  if (!check) return NextResponse.json({ check: null });
+  if (!check) return NextResponse.json({ check: null, issues: [] });
 
   const { data: issues } = await admin
     .from("compliance_issues")

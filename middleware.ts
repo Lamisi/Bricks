@@ -37,13 +37,18 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // 2. Determine the active locale from the URL prefix (fall back to default).
+  // 2. Skip intl processing for API routes — they don't need locale prefixing.
+  if (pathname.startsWith("/api/")) {
+    return supabaseResponse;
+  }
+
+  // 3. Determine the active locale from the URL prefix (fall back to default).
   const currentLocale =
     routing.locales.find(
       (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
     ) ?? routing.defaultLocale;
 
-  // 3. Auth guards — must run before intlMiddleware so redirects use the
+  // 4. Auth guards — must run before intlMiddleware so redirects use the
   //    locale prefix and avoid an extra round-trip.
   const localePrefix = new RegExp(
     `^/(${routing.locales.join("|")})/app`,
@@ -69,10 +74,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 4. Run next-intl middleware (handles locale detection and URL rewriting).
+  // 5. Run next-intl middleware (handles locale detection and URL rewriting).
   const intlResponse = intlMiddleware(request);
 
-  // 5. Copy Supabase session cookies onto the intl response so auth state
+  // 6. Copy Supabase session cookies onto the intl response so auth state
   //    is propagated correctly.
   supabaseResponse.cookies.getAll().forEach((cookie) => {
     intlResponse.cookies.set(cookie.name, cookie.value, cookie);
