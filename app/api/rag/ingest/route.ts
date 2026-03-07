@@ -1,9 +1,4 @@
 import { NextResponse } from "next/server";
-import { Readable } from "node:stream";
-// Use Next.js's bundled busboy to avoid an extra dependency and to bypass
-// the body-size limit that request.formData() hits for files > ~4 MB.
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const busboy = require("next/dist/compiled/busboy") as any;
 import { PDFParse } from "pdf-parse";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,73 +12,15 @@ const MAX_RETRIES = 3;
 
 type Language = Database["public"]["Enums"]["language_code"];
 
-type ParsedForm = {
-  fileBuffer: Buffer;
-  mimeType: string;
-  title: string;
-  language: string;
-  description: string | null;
-};
-
-/**
- * Parse a multipart/form-data request using busboy.
- *
- * We read the raw body with request.arrayBuffer() first (binary-safe, no
- * multipart overhead, so no Next.js 4 MB formData limit applies), then wrap
- * it in Readable.from() before piping to busboy. This avoids the
- * "Unexpected end of form" error that occurs when using Readable.fromWeb()
- * on Next.js's internally-buffered Web ReadableStream.
- */
-async function parseMultipart(request: Request): Promise<ParsedForm> {
-  const contentType = request.headers.get("content-type") ?? "";
-  if (!contentType.startsWith("multipart/form-data")) {
-    throw new Error("Expected multipart/form-data");
-  }
-
-  // Read raw bytes — arrayBuffer() is not subject to the multipart-parse limit
-  const rawBody = Buffer.from(await request.arrayBuffer());
-
-  return new Promise((resolve, reject) => {
-    const bb = busboy({ headers: { "content-type": contentType }, limits: { fileSize: MAX_FILE_SIZE } });
-
-    const fields: Record<string, string> = {};
-    let fileBuffer: Buffer | null = null;
-    let mimeType = "";
-
-    bb.on("file", (_field: string, stream: NodeJS.ReadableStream, info: { mimeType: string }) => {
-      mimeType = info.mimeType;
-      const chunks: Buffer[] = [];
-      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
-      stream.on("end", () => { fileBuffer = Buffer.concat(chunks); });
-      stream.on("error", reject);
-    });
-
-    bb.on("field", (name: string, value: string) => { fields[name] = value; });
-
-    bb.on("finish", () => {
-      if (!fileBuffer) return reject(new Error("No file received"));
-      const title = fields.title?.trim() ?? "";
-      if (!title) return reject(new Error("title is required"));
-      resolve({
-        fileBuffer,
-        mimeType,
-        title,
-        language: fields.language ?? "no",
-        description: fields.description?.trim() || null,
-      });
-    });
-
-    bb.on("error", reject);
-
-    // Wrap the complete buffer in a Node.js Readable — reliable, no stream
-    // conversion quirks from Readable.fromWeb() on Next.js's wrapped body.
-    Readable.from(rawBody).pipe(bb);
-  });
-}
-
-// Allow up to 60 s for large PDF ingestion (embedding many chunks takes time)
+// Allow up to 60 s for large PDF ingestion (chunking + embedding batches)
 export const maxDuration = 60;
 
+// POST /api/rag/ingest
+// Body: { storagePath, title, language, description? }
+//
+// The PDF is NOT uploaded through this endpoint — the client uploads directly
+// to Supabase Storage via a signed URL (/api/rag/upload-url), then calls this
+// endpoint with the resulting storage path. This avoids Next.js body-size limits.
 export async function POST(request: Request) {
   // ── Auth: global admin only ───────────────────────────────────────────────
   const supabase = await createClient();
@@ -103,36 +40,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Global admin access required" }, { status: 403 });
   }
 
-  // ── Parse multipart form (streaming via busboy) ───────────────────────────
-  let parsed: ParsedForm;
+  // ── Parse JSON body ───────────────────────────────────────────────────────
+  let body: { storagePath?: string; title?: string; language?: string; description?: string };
   try {
-    parsed = await parseMultipart(request);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Invalid form data";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { fileBuffer, mimeType, title, language, description } = parsed;
+  const { storagePath, title: rawTitle, language = "no", description } = body;
+  const title = rawTitle?.trim() ?? "";
 
+  if (!storagePath) return NextResponse.json({ error: "storagePath is required" }, { status: 400 });
+  if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 });
   if (!["no", "en"].includes(language)) {
     return NextResponse.json({ error: "language must be 'no' or 'en'" }, { status: 400 });
-  }
-  if (mimeType !== "application/pdf") {
-    return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
-  }
-  if (fileBuffer.length > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File exceeds 20 MB limit" }, { status: 400 });
   }
 
   const admin = createAdminClient();
   const startTime = Date.now();
+
+  // ── Download PDF from Storage ─────────────────────────────────────────────
+  const { data: blob, error: downloadError } = await admin.storage
+    .from("documents")
+    .download(storagePath);
+
+  if (downloadError || !blob) {
+    console.error("Failed to download knowledge source PDF:", downloadError);
+    return NextResponse.json({ error: "Could not retrieve uploaded file" }, { status: 500 });
+  }
+
+  const fileBuffer = Buffer.from(await blob.arrayBuffer());
+
+  if (fileBuffer.length > MAX_FILE_SIZE) {
+    await admin.storage.from("documents").remove([storagePath]);
+    return NextResponse.json({ error: "File exceeds 20 MB limit" }, { status: 400 });
+  }
 
   // ── Create knowledge_source record ────────────────────────────────────────
   const { data: source, error: insertError } = await admin
     .from("knowledge_sources")
     .insert({
       title,
-      description,
+      description: description?.trim() || null,
       source_type: "pdf",
       language: language as Language,
       status: "processing",
@@ -143,6 +93,7 @@ export async function POST(request: Request) {
 
   if (insertError || !source) {
     console.error("knowledge_source insert error:", insertError);
+    await admin.storage.from("documents").remove([storagePath]);
     return NextResponse.json({ error: "Could not create knowledge source" }, { status: 500 });
   }
 
@@ -159,6 +110,7 @@ export async function POST(request: Request) {
         .from("knowledge_sources")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("id", sourceId);
+      await admin.storage.from("documents").remove([storagePath]);
       return NextResponse.json({ error: "No text content found in PDF" }, { status: 422 });
     }
 
@@ -182,7 +134,6 @@ export async function POST(request: Request) {
           console.error("Embedding batch attempt failed:", { batchStart, attempt }, err);
           if (attempt === MAX_RETRIES) {
             failCount += batch.length;
-            console.error("Skipping batch after max retries:", { batchStart, maxRetries: MAX_RETRIES });
           }
         }
       }
@@ -207,7 +158,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── Finalize knowledge_source ─────────────────────────────────────────
+    // ── Finalize ──────────────────────────────────────────────────────────
     const finalStatus = failCount === 0 ? "ready" : successCount > 0 ? "partial" : "failed";
 
     await admin
@@ -219,32 +170,20 @@ export async function POST(request: Request) {
       })
       .eq("id", sourceId);
 
-    const duration = Date.now() - startTime;
-    console.log("Ingestion complete:", {
-      sourceId,
-      totalChunks: chunks.length,
-      successCount,
-      failCount,
-      status: finalStatus,
-      durationMs: duration,
-    });
+    // Clean up the temporary upload file
+    await admin.storage.from("documents").remove([storagePath]);
 
-    return NextResponse.json({
-      sourceId,
-      status: finalStatus,
-      chunkCount: successCount,
-      failedChunks: failCount,
-    });
+    const duration = Date.now() - startTime;
+    console.log("Ingestion complete:", { sourceId, successCount, failCount, status: finalStatus, durationMs: duration });
+
+    return NextResponse.json({ sourceId, status: finalStatus, chunkCount: successCount, failedChunks: failCount });
   } catch (err) {
     console.error("Ingestion error:", err);
     await admin
       .from("knowledge_sources")
       .update({ status: "failed", updated_at: new Date().toISOString() })
       .eq("id", sourceId);
-
-    return NextResponse.json(
-      { error: "Ingestion failed. Please try again." },
-      { status: 500 },
-    );
+    await admin.storage.from("documents").remove([storagePath]);
+    return NextResponse.json({ error: "Ingestion failed. Please try again." }, { status: 500 });
   }
 }
