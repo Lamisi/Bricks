@@ -106,6 +106,7 @@ export function DocumentGenerator({
 
   const editor = useEditor({
     extensions: [StarterKit],
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: "tiptap-content focus:outline-none p-6 min-h-[400px] text-sm",
