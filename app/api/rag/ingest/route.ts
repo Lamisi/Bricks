@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { Readable } from "node:stream";
+// Use Next.js's bundled busboy to avoid an extra dependency and to bypass
+// the body-size limit that request.formData() hits for files > ~4 MB.
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const busboy = require("next/dist/compiled/busboy") as any;
 import { PDFParse } from "pdf-parse";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,10 +12,69 @@ import { embedBatch, EMBEDDING_MODEL } from "@/lib/ai/embeddings";
 import type { Database } from "@/types/database";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-const EMBED_BATCH_SIZE = 20; // embed 20 chunks per API call
+const EMBED_BATCH_SIZE = 20;
 const MAX_RETRIES = 3;
 
 type Language = Database["public"]["Enums"]["language_code"];
+
+type ParsedForm = {
+  fileBuffer: Buffer;
+  mimeType: string;
+  title: string;
+  language: string;
+  description: string | null;
+};
+
+/**
+ * Parse a multipart/form-data request using busboy (streaming).
+ * This bypasses Next.js's internal body-size limit on request.formData().
+ */
+function parseMultipart(request: Request): Promise<ParsedForm> {
+  return new Promise((resolve, reject) => {
+    const contentType = request.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("multipart/form-data")) {
+      return reject(new Error("Expected multipart/form-data"));
+    }
+
+    const bb = busboy({ headers: { "content-type": contentType }, limits: { fileSize: MAX_FILE_SIZE } });
+
+    const fields: Record<string, string> = {};
+    let fileBuffer: Buffer | null = null;
+    let mimeType = "";
+
+    bb.on("file", (_field: string, stream: NodeJS.ReadableStream, info: { mimeType: string }) => {
+      mimeType = info.mimeType;
+      const chunks: Buffer[] = [];
+      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      stream.on("end", () => { fileBuffer = Buffer.concat(chunks); });
+      stream.on("error", reject);
+    });
+
+    bb.on("field", (name: string, value: string) => { fields[name] = value; });
+
+    bb.on("finish", () => {
+      if (!fileBuffer) return reject(new Error("No file received"));
+      const title = fields.title?.trim() ?? "";
+      if (!title) return reject(new Error("title is required"));
+      resolve({
+        fileBuffer,
+        mimeType,
+        title,
+        language: fields.language ?? "no",
+        description: fields.description?.trim() || null,
+      });
+    });
+
+    bb.on("error", reject);
+
+    // Pipe the Web ReadableStream into busboy via a Node.js Readable
+    if (!request.body) return reject(new Error("No request body"));
+    Readable.fromWeb(request.body as import("stream/web").ReadableStream).pipe(bb);
+  });
+}
+
+// Allow up to 60 s for large PDF ingestion (embedding many chunks takes time)
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   // ── Auth: global admin only ───────────────────────────────────────────────
@@ -31,28 +95,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Global admin access required" }, { status: 403 });
   }
 
-  // ── Parse multipart form ──────────────────────────────────────────────────
-  let formData: FormData;
+  // ── Parse multipart form (streaming via busboy) ───────────────────────────
+  let parsed: ParsedForm;
   try {
-    formData = await request.formData();
-  } catch {
-    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+    parsed = await parseMultipart(request);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Invalid form data";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const file = formData.get("file") as File | null;
-  const title = (formData.get("title") as string | null)?.trim();
-  const language = (formData.get("language") as string | null) ?? "no";
-  const description = (formData.get("description") as string | null)?.trim() ?? null;
+  const { fileBuffer, mimeType, title, language, description } = parsed;
 
-  if (!file) return NextResponse.json({ error: "file is required" }, { status: 400 });
-  if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 });
   if (!["no", "en"].includes(language)) {
     return NextResponse.json({ error: "language must be 'no' or 'en'" }, { status: 400 });
   }
-  if (file.type !== "application/pdf") {
+  if (mimeType !== "application/pdf") {
     return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
   }
-  if (file.size > MAX_FILE_SIZE) {
+  if (fileBuffer.length > MAX_FILE_SIZE) {
     return NextResponse.json({ error: "File exceeds 20 MB limit" }, { status: 400 });
   }
 
@@ -82,8 +142,7 @@ export async function POST(request: Request) {
 
   try {
     // ── Extract text from PDF ─────────────────────────────────────────────
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const parser = new PDFParse({ data: buffer });
+    const parser = new PDFParse({ data: fileBuffer });
     const pdfData = await parser.getText();
     const rawText = pdfData.text;
 
