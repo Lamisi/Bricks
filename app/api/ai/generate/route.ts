@@ -115,13 +115,6 @@ export async function POST(request: Request) {
     .filter(Boolean)
     .join("\n");
 
-  const result = streamText({
-    model: getClaudeModel(DEFAULT_MODEL),
-    system: systemPrompt,
-    prompt: userPrompt,
-    maxOutputTokens: 4096,
-  });
-
   console.log("Document generation started:", {
     userId: user.id,
     projectId,
@@ -129,6 +122,22 @@ export async function POST(request: Request) {
     municipality: safeMunicipality,
     language: lang,
   });
+
+  let result;
+  try {
+    result = streamText({
+      model: getClaudeModel(DEFAULT_MODEL),
+      system: systemPrompt,
+      prompt: userPrompt,
+      maxOutputTokens: 4096,
+      onError: ({ error }) => {
+        console.error("Document generation stream error:", error);
+      },
+    });
+  } catch (err) {
+    console.error("Document generation failed to start:", err);
+    return new Response("Generation failed. Please try again.", { status: 500 });
+  }
 
   return result.toTextStreamResponse();
 }
