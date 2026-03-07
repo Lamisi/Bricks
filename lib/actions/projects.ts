@@ -205,8 +205,9 @@ export async function inviteMember(
       role,
       token: invite.token,
     });
-  } catch {
+  } catch (err) {
     // Clean up the invite if email fails
+    console.error("inviteMember: email send failed:", err);
     await admin.from("project_invites").delete().eq("token", invite.token);
     return {
       error: "Could not send invite email. Please check the address and try again.",

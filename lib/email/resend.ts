@@ -7,6 +7,8 @@ const APP_URL =
 
 const FROM = "Bricks <noreply@bricks.build>";
 
+const IS_DEV = process.env.NODE_ENV === "development";
+
 export async function sendProjectInviteEmail({
   to,
   inviterName,
@@ -22,6 +24,16 @@ export async function sendProjectInviteEmail({
 }) {
   const joinUrl = `${APP_URL}/app/projects/join?token=${token}`;
   const roleLabel = role.replace(/_/g, " ");
+
+  // In local development Resend's domain verification is not available, so
+  // we skip the actual send and print the join URL to the server console.
+  if (IS_DEV) {
+    console.log(
+      "[DEV] Invite email skipped — open this URL to accept the invitation:",
+      joinUrl,
+    );
+    return;
+  }
 
   const { error } = await resend.emails.send({
     from: FROM,
@@ -58,6 +70,7 @@ export async function sendProjectInviteEmail({
   });
 
   if (error) {
+    console.error("Resend email error:", { to }, error.message);
     throw new Error(`Failed to send invite email: ${error.message}`);
   }
 }
