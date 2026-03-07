@@ -128,7 +128,7 @@ on conflict (provider, provider_id) do nothing;
 -- The handle_new_user trigger creates the profiles row on auth.users insert.
 -- We UPDATE to set display names and language preferences.
 -- ---------------------------------------------------------------------------
-update public.profiles set full_name = 'Alex Admin',      language = 'no' where id = '00000000-0000-0000-0000-000000000001';
+update public.profiles set full_name = 'Alex Admin',      language = 'no', is_admin = true  where id = '00000000-0000-0000-0000-000000000001';
 update public.profiles set full_name = 'Anna Architect',  language = 'no' where id = '00000000-0000-0000-0000-000000000002';
 update public.profiles set full_name = 'Erik Engineer',   language = 'en' where id = '00000000-0000-0000-0000-000000000003';
 update public.profiles set full_name = 'Carl Carpenter',  language = 'no' where id = '00000000-0000-0000-0000-000000000004';
