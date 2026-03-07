@@ -68,14 +68,43 @@ export function KnowledgeSourceManager({ initialSources }: { initialSources: Sou
     setIsUploading(true);
     setUploadResult(null);
 
-    const fd = new FormData();
-    fd.append("file", selectedFile);
-    fd.append("title", title.trim());
-    fd.append("language", language);
-    if (description.trim()) fd.append("description", description.trim());
-
     try {
-      const res = await fetch("/api/rag/ingest", { method: "POST", body: fd });
+      // Step 1: Get a signed upload URL from the server (small JSON request —
+      // no body size limit applies here).
+      const urlRes = await fetch(
+        `/api/rag/upload-url?fileName=${encodeURIComponent(selectedFile.name)}`,
+      );
+      const urlBody = (await urlRes.json()) as { signedUrl?: string; storagePath?: string; error?: string };
+      if (!urlRes.ok || !urlBody.signedUrl || !urlBody.storagePath) {
+        setUploadResult({ error: urlBody.error ?? "Could not get upload URL" });
+        setIsUploading(false);
+        return;
+      }
+
+      // Step 2: Upload the PDF directly to Supabase Storage via the signed URL.
+      // This bypasses Next.js entirely — no body-size limits apply.
+      const uploadRes = await fetch(urlBody.signedUrl, {
+        method: "PUT",
+        body: selectedFile,
+        headers: { "Content-Type": selectedFile.type || "application/pdf" },
+      });
+      if (!uploadRes.ok) {
+        setUploadResult({ error: "File upload to storage failed. Please try again." });
+        setIsUploading(false);
+        return;
+      }
+
+      // Step 3: Trigger ingestion with the storage path (small JSON payload).
+      const res = await fetch("/api/rag/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storagePath: urlBody.storagePath,
+          title: title.trim(),
+          language,
+          description: description.trim() || undefined,
+        }),
+      });
       const body = (await res.json()) as IngestResult;
       setUploadResult(body);
 
