@@ -32,6 +32,7 @@ type IngestResult = {
   chunkCount?: number;
   failedChunks?: number;
   error?: string;
+  embedError?: string;
 };
 
 function formatDate(iso: string) {
@@ -186,26 +187,36 @@ export function KnowledgeSourceManager({ initialSources }: { initialSources: Sou
             </div>
           </div>
 
-          {uploadResult && (
-            <div
-              className={cn(
-                "flex items-start gap-2 rounded-md px-3 py-2 text-sm",
-                uploadResult.error
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400",
-              )}
-            >
-              {uploadResult.error ? (
-                <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              ) : (
-                <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              )}
-              <span>
-                {uploadResult.error ??
-                  `Ingested ${uploadResult.chunkCount} chunks (status: ${uploadResult.status}${uploadResult.failedChunks ? `, ${uploadResult.failedChunks} failed` : ""})`}
-              </span>
-            </div>
-          )}
+          {uploadResult && (() => {
+            const isError = !!uploadResult.error || uploadResult.status === "failed";
+            const isPartial = uploadResult.status === "partial";
+            const isSuccess = uploadResult.status === "ready";
+            return (
+              <div
+                className={cn(
+                  "flex items-start gap-2 rounded-md px-3 py-2 text-sm",
+                  isError
+                    ? "bg-destructive/10 text-destructive"
+                    : isPartial
+                      ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400"
+                      : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400",
+                )}
+              >
+                {isError || isPartial ? (
+                  <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                )}
+                <span>
+                  {uploadResult.error
+                    ? uploadResult.error
+                    : isSuccess
+                      ? `Ingested ${uploadResult.chunkCount} chunks successfully`
+                      : `Ingested ${uploadResult.chunkCount ?? 0} chunks (${uploadResult.failedChunks} failed)${uploadResult.embedError ? ` — ${uploadResult.embedError}` : ""}`}
+                </span>
+              </div>
+            );
+          })()}
 
           <Button type="submit" size="sm" disabled={isUploading || !selectedFile || !title.trim()}>
             {isUploading ? (
