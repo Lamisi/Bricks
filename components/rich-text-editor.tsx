@@ -112,6 +112,7 @@ export function RichTextEditor({
       TableHeader,
       TableCell,
     ],
+    immediatelyRender: false,
     content: (initialContent as object) ?? "",
     editorProps: {
       attributes: {
