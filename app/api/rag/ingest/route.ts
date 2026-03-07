@@ -26,16 +26,24 @@ type ParsedForm = {
 };
 
 /**
- * Parse a multipart/form-data request using busboy (streaming).
- * This bypasses Next.js's internal body-size limit on request.formData().
+ * Parse a multipart/form-data request using busboy.
+ *
+ * We read the raw body with request.arrayBuffer() first (binary-safe, no
+ * multipart overhead, so no Next.js 4 MB formData limit applies), then wrap
+ * it in Readable.from() before piping to busboy. This avoids the
+ * "Unexpected end of form" error that occurs when using Readable.fromWeb()
+ * on Next.js's internally-buffered Web ReadableStream.
  */
-function parseMultipart(request: Request): Promise<ParsedForm> {
-  return new Promise((resolve, reject) => {
-    const contentType = request.headers.get("content-type") ?? "";
-    if (!contentType.startsWith("multipart/form-data")) {
-      return reject(new Error("Expected multipart/form-data"));
-    }
+async function parseMultipart(request: Request): Promise<ParsedForm> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    throw new Error("Expected multipart/form-data");
+  }
 
+  // Read raw bytes — arrayBuffer() is not subject to the multipart-parse limit
+  const rawBody = Buffer.from(await request.arrayBuffer());
+
+  return new Promise((resolve, reject) => {
     const bb = busboy({ headers: { "content-type": contentType }, limits: { fileSize: MAX_FILE_SIZE } });
 
     const fields: Record<string, string> = {};
@@ -67,9 +75,9 @@ function parseMultipart(request: Request): Promise<ParsedForm> {
 
     bb.on("error", reject);
 
-    // Pipe the Web ReadableStream into busboy via a Node.js Readable
-    if (!request.body) return reject(new Error("No request body"));
-    Readable.fromWeb(request.body as import("stream/web").ReadableStream).pipe(bb);
+    // Wrap the complete buffer in a Node.js Readable — reliable, no stream
+    // conversion quirks from Readable.fromWeb() on Next.js's wrapped body.
+    Readable.from(rawBody).pipe(bb);
   });
 }
 
