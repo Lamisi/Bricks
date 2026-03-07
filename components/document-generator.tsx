@@ -177,6 +177,13 @@ export function DocumentGenerator({
         updateEditor(accumulatedRef.current);
       }
 
+      // Guard against empty response (e.g. Claude API error mid-stream)
+      if (!accumulatedRef.current.trim()) {
+        setError("Generation returned no content. Check that the AI service is reachable and try again.");
+        setStep("wizard");
+        return;
+      }
+
       // Final content update
       if (editor) {
         editor.commands.setContent(markdownToHtml(accumulatedRef.current), { emitUpdate: false });
