@@ -128,6 +128,7 @@ export async function POST(request: Request) {
     // ── Embed and store in batches ────────────────────────────────────────
     let successCount = 0;
     let failCount = 0;
+    let lastEmbedError: string | null = null;
 
     for (let batchStart = 0; batchStart < chunks.length; batchStart += EMBED_BATCH_SIZE) {
       const batch = chunks.slice(batchStart, batchStart + EMBED_BATCH_SIZE);
@@ -136,9 +137,12 @@ export async function POST(request: Request) {
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
           embeddings = await embedBatch(batch);
+          lastEmbedError = null;
           break;
         } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
           console.error("Embedding batch attempt failed:", { batchStart, attempt }, err);
+          lastEmbedError = msg;
           if (attempt === MAX_RETRIES) {
             failCount += batch.length;
           }
@@ -183,7 +187,13 @@ export async function POST(request: Request) {
     const duration = Date.now() - startTime;
     console.log("Ingestion complete:", { sourceId, successCount, failCount, status: finalStatus, durationMs: duration });
 
-    return NextResponse.json({ sourceId, status: finalStatus, chunkCount: successCount, failedChunks: failCount });
+    return NextResponse.json({
+      sourceId,
+      status: finalStatus,
+      chunkCount: successCount,
+      failedChunks: failCount,
+      ...(lastEmbedError ? { embedError: lastEmbedError } : {}),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Ingestion error:", err);
