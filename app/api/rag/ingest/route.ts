@@ -57,6 +57,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "language must be 'no' or 'en'" }, { status: 400 });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: "OPENAI_API_KEY is not configured. Add it to .env.local to enable PDF ingestion." },
+      { status: 500 },
+    );
+  }
+
   const admin = createAdminClient();
   const startTime = Date.now();
 
@@ -178,12 +185,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ sourceId, status: finalStatus, chunkCount: successCount, failedChunks: failCount });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error("Ingestion error:", err);
     await admin
       .from("knowledge_sources")
       .update({ status: "failed", updated_at: new Date().toISOString() })
       .eq("id", sourceId);
     await admin.storage.from("documents").remove([storagePath]);
-    return NextResponse.json({ error: "Ingestion failed. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: `Ingestion failed: ${message}` }, { status: 500 });
   }
 }
