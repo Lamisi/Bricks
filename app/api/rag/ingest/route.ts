@@ -57,9 +57,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "language must be 'no' or 'en'" }, { status: 400 });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.VOYAGE_API_KEY) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured. Add it to .env.local to enable PDF ingestion." },
+      { error: "VOYAGE_API_KEY is not configured. Add it to .env.local to enable PDF ingestion." },
       { status: 500 },
     );
   }
