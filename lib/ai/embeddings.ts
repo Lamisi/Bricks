@@ -2,19 +2,22 @@ import "server-only";
 import { embed, embedMany } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 
-export const EMBEDDING_MODEL = "text-embedding-3-small" as const;
-export const EMBEDDING_DIMENSIONS = 1536 as const;
+export const EMBEDDING_MODEL = "voyage-3" as const;
+export const EMBEDDING_DIMENSIONS = 1024 as const;
 
-function getOpenAIProvider() {
-  const apiKey = process.env.OPENAI_API_KEY;
+function getVoyageProvider() {
+  const apiKey = process.env.VOYAGE_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not set");
+    throw new Error("VOYAGE_API_KEY environment variable is not set");
   }
-  return createOpenAI({ apiKey });
+  return createOpenAI({
+    apiKey,
+    baseURL: "https://api.voyageai.com/v1",
+  });
 }
 
 function getEmbeddingModel() {
-  return getOpenAIProvider().embedding(EMBEDDING_MODEL);
+  return getVoyageProvider().embedding(EMBEDDING_MODEL);
 }
 
 /** Generate a single embedding vector for a text string. */
