@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -19,7 +20,7 @@ import { Link } from "@/lib/navigation";
 
 const initialState: AuthState = {};
 
-export default function SignInPage() {
+function SignInForm() {
   const t = useTranslations("auth.signIn");
   const [state, formAction, pending] = useActionState(signIn, initialState);
   const searchParams = useSearchParams();
@@ -85,5 +86,13 @@ export default function SignInPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
   );
 }
