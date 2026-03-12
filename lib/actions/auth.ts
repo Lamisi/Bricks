@@ -70,6 +70,7 @@ export async function signIn(
     Promise.resolve(formData.get("redirectTo") as string | null),
   ]);
   redirect({ href: redirectTo ?? "/app", locale });
+  return {};
 }
 
 export async function signOut(): Promise<void> {

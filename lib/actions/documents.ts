@@ -32,18 +32,18 @@ export async function createRichTextDocument(
   const admin = createAdminClient();
   const { data: doc, error } = await admin
     .from("documents")
-    .insert({ project_id: projectId, title, created_by: user.id, status: "draft" })
+    .insert({ project_id: projectId, title, created_by: user!.id, status: "draft" })
     .select("id")
     .single();
 
   if (error || !doc) redirect({ href: `/app/projects/${projectId}/documents/new`, locale });
 
-  void embedDocument(doc.id, title).catch((err) => {
+  void embedDocument(doc!.id, title).catch((err) => {
     console.error("Doc embed failed:", err);
   });
 
   revalidatePath(`/app/projects/${projectId}`);
-  redirect({ href: `/app/projects/${projectId}/documents/${doc.id}/edit`, locale });
+  redirect({ href: `/app/projects/${projectId}/documents/${doc!.id}/edit`, locale });
 }
 
 // ---------------------------------------------------------------------------

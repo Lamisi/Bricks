@@ -60,7 +60,7 @@ export async function createProject(
   const { data: existingOrg } = await supabase
     .from("organizations")
     .select("id")
-    .eq("created_by", user.id)
+    .eq("created_by", user!.id)
     .limit(1)
     .single();
 
@@ -96,6 +96,7 @@ export async function createProject(
 
   revalidatePath("/app/projects");
   redirect({ href: `/app/projects/${projectId}`, locale });
+  return {};
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +245,7 @@ export async function joinProject(token: string): Promise<{ error?: string; proj
 
   // Add member — use admin client to bypass RLS on project_members for non-admin actors
   const { error: memberError } = await admin.from("project_members").upsert(
-    { project_id: invite.project_id, user_id: user.id, role: invite.role },
+    { project_id: invite.project_id, user_id: user!.id, role: invite.role },
     { onConflict: "project_id,user_id" },
   );
 

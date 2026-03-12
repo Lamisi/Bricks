@@ -22,11 +22,11 @@ export default async function AppLayout({
   if (!user) redirect({ href: "/sign-in", locale });
 
   const [{ data: profile }, t] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
     getTranslations("appLayout"),
   ]);
 
-  const displayName = profile?.full_name ?? user.email ?? "Account";
+  const displayName = profile?.full_name ?? user!.email ?? "Account";
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -63,7 +63,7 @@ export default async function AppLayout({
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell userId={user.id} />
+            <NotificationBell userId={user!.id} />
             <LanguageSwitcher />
             <span className="hidden sm:block text-sm text-muted-foreground">
               {displayName}

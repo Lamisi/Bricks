@@ -83,7 +83,7 @@ export default async function DocumentPage({
   console.log("Document viewed:", {
     documentId: docId,
     versionId: latestVersion.id,
-    viewerUserId: user.id,
+    viewerUserId: user!.id,
   });
 
   return (
@@ -105,7 +105,7 @@ export default async function DocumentPage({
       initialContent={initialContent}
       projectId={projectId}
       canEdit={canEdit}
-      currentUserId={user.id}
+      currentUserId={user!.id}
       userRole={role ?? "carpenter"}
       canDismissCompliance={role === "admin" || role === "architect"}
     />

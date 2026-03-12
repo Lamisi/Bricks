@@ -25,7 +25,7 @@ export async function logSuggestionAction(
   await supabase.from("suggestion_logs").insert({
     document_id: documentId,
     document_version_id: versionId,
-    user_id: user.id,
+    user_id: user!.id,
     suggestion_type: type,
     description,
     recommended_fix: recommendedFix,
