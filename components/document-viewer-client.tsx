@@ -23,12 +23,6 @@ import { ComplianceReport } from "@/components/compliance-report";
 import { DocumentStatusActions } from "@/components/document-status-actions";
 import type { ProjectRole, DocumentStatus } from "@/lib/auth/rbac";
 
-// DOMPurify requires a browser DOM. Next.js pre-renders client components on
-// the server, so we must guard against the SSR environment where window is
-// undefined. The HTML comes from tiptapJsonToHtml (trusted server output), so
-// skipping sanitisation during SSR is safe — it runs on the client as intended.
-const sanitizeHtml = (html: string): string =>
-  typeof window === "undefined" ? html : DOMPurify.sanitize(html);
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -293,9 +287,11 @@ export function DocumentViewerClient({
               <div
                 className="tiptap-content p-6 max-w-3xl mx-auto"
                 // HTML is generated server-side from Tiptap JSON (no raw HTML nodes).
-                // DOMPurify sanitizes as defence-in-depth; it returns the input
-                // unchanged in environments without a DOM (SSR).
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.html) }}
+                dangerouslySetInnerHTML={{
+                  // DOMPurify requires a browser DOM; skip sanitisation during SSR
+                  // (HTML is trusted server output from tiptapJsonToHtml).
+                  __html: DOMPurify.sanitize(content.html),
+                }}
               />
             ) : isDwg ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
