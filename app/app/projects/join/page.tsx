@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { joinProject } from "@/lib/actions/projects";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
 
-export default function JoinProjectPage() {
+function JoinProjectForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -100,5 +100,13 @@ export default function JoinProjectPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function JoinProjectPage() {
+  return (
+    <Suspense>
+      <JoinProjectForm />
+    </Suspense>
   );
 }
