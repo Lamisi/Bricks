@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
+import { extractText } from "unpdf";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { chunkText } from "@/lib/ai/rag";
@@ -108,9 +108,8 @@ export async function POST(request: Request) {
 
   try {
     // ── Extract text from PDF ─────────────────────────────────────────────
-    const parser = new PDFParse({ data: fileBuffer });
-    const pdfData = await parser.getText();
-    const rawText = pdfData.text;
+    const { text } = await extractText(new Uint8Array(fileBuffer), { mergePages: true });
+    const rawText = text as string;
 
     if (!rawText.trim()) {
       await admin
