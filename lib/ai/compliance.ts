@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { PDFParse } from "pdf-parse";
+import { extractText } from "unpdf";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { matchDocuments } from "@/lib/ai/rag";
 import { getClaudeModel, DEFAULT_MODEL } from "@/lib/ai/claude";
@@ -56,9 +56,8 @@ async function extractTextFromStorage(storagePath: string): Promise<string | nul
 
   const buffer = Buffer.from(await data.arrayBuffer());
   try {
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    return result.text || null;
+    const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
+    return (text as string) || null;
   } catch {
     return null;
   }
