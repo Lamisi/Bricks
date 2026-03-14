@@ -46,6 +46,9 @@ export async function GET(request: Request) {
   return NextResponse.json({ check, issues: issues ?? [] });
 }
 
+// Allow up to 60 s — compliance pipeline includes Voyage AI embedding + Claude API call.
+export const maxDuration = 60;
+
 // ---------------------------------------------------------------------------
 // POST /api/ai/compliance
 // Starts (or retries) a compliance check for a document version.
@@ -83,16 +86,26 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  // Check if an active check already exists (pending or running)
+  // Check if an active check already exists (pending or running).
+  // Treat checks older than 2 minutes as stale (function timed out) and allow a retry.
+  const staleThreshold = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   const { data: existing } = await admin
     .from("compliance_checks")
-    .select("id, status")
+    .select("id, status, updated_at")
     .eq("document_version_id", versionId)
     .in("status", ["pending", "running"])
     .maybeSingle();
 
-  if (existing) {
+  if (existing && existing.updated_at > staleThreshold) {
     return NextResponse.json({ checkId: existing.id, status: existing.status });
+  }
+
+  // If stale, mark it failed so it doesn't block future checks.
+  if (existing) {
+    await admin
+      .from("compliance_checks")
+      .update({ status: "failed", error: "Check timed out. Please retry.", updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
   }
 
   // Create a new compliance_check record
