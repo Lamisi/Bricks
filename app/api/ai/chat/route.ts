@@ -7,6 +7,9 @@ import { getClaudeModel, DEFAULT_MODEL } from "@/lib/ai/claude";
 // NOTE: This is per-instance. In a multi-instance / edge deployment, replace
 // with a distributed store (Upstash Redis, Vercel KV, or Supabase RPC).
 // ---------------------------------------------------------------------------
+// Allow up to 60 s for auth + Claude streaming response.
+export const maxDuration = 60;
+
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(userId: string, maxPerMinute = 10): boolean {

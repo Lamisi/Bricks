@@ -4,6 +4,9 @@ import { getUserProjectRole } from "@/lib/auth/rbac";
 import { getClaudeModel, DEFAULT_MODEL } from "@/lib/ai/claude";
 import { matchDocuments } from "@/lib/ai/rag";
 
+// Allow up to 60 s for auth + RAG retrieval + Claude streaming response.
+export const maxDuration = 60;
+
 const MAX_INPUT_LENGTH = 1000;
 
 function sanitize(input: string): string {
