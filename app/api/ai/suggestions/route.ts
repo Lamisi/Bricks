@@ -47,6 +47,9 @@ function tiptapToText(node: Record<string, unknown>): string {
   return blockTypes.has(node.type as string) ? text + "\n" : text;
 }
 
+// Allow up to 60 s for auth + RAG retrieval + Claude streaming response.
+export const maxDuration = 60;
+
 // ---------------------------------------------------------------------------
 // POST /api/ai/suggestions
 // Body: { versionId: string, projectId: string }
