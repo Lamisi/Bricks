@@ -12,6 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { fireOutboundWebhooks } from "@/lib/webhooks/outbound";
 import { notifyMany } from "@/lib/notifications/notify";
+import { sendDocumentStatusEmail } from "@/lib/email/resend";
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: "Draft",
@@ -179,6 +180,29 @@ async function sendWorkflowNotifications({
           link,
         })),
       );
+
+      // Fire emails to all reviewers
+      const emailLookups = await Promise.all(
+        recipientIds.map(async (userId: string) => {
+          const { data } = await admin.auth.admin.getUserById(userId);
+          return data.user?.email ?? null;
+        }),
+      );
+      void Promise.all(
+        emailLookups
+          .filter((email): email is string => email !== null)
+          .map((email) =>
+            sendDocumentStatusEmail({
+              to: email,
+              actorName,
+              docTitle,
+              newStatus: "in_review",
+              docLink: link,
+            }).catch((err) => {
+              console.error("Status email send failed:", err);
+            }),
+          ),
+      );
     }
     return;
   }
@@ -207,5 +231,21 @@ async function sendWorkflowNotifications({
         link,
       },
     ]);
+
+    // Fire email to document creator
+    const { data: ownerUser } = await admin.auth.admin.getUserById(documentCreatedBy);
+    const ownerEmail = ownerUser.user?.email;
+    if (ownerEmail) {
+      void sendDocumentStatusEmail({
+        to: ownerEmail,
+        actorName,
+        docTitle,
+        newStatus,
+        docLink: link,
+        note,
+      }).catch((err) => {
+        console.error("Status email send failed:", err);
+      });
+    }
   }
 }
