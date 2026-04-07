@@ -13,6 +13,7 @@ import type { Database } from "@/types/database";
 import { fireOutboundWebhooks } from "@/lib/webhooks/outbound";
 import { notifyMany } from "@/lib/notifications/notify";
 import { sendDocumentStatusEmail } from "@/lib/email/resend";
+import { runComplianceCheck } from "@/lib/ai/compliance";
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: "Draft",
@@ -99,6 +100,13 @@ export async function transitionDocumentStatus(
   }).catch((err) => {
     console.error("Outbound webhook failed:", err);
   });
+
+  // Auto-trigger compliance check when submitted for review
+  if (newStatus === "in_review") {
+    void triggerAutoComplianceCheck(admin, docId, user.id).catch((err) => {
+      console.error("Auto-compliance trigger failed:", err);
+    });
+  }
 
   // Non-blocking notifications
   void sendWorkflowNotifications({
@@ -248,4 +256,57 @@ async function sendWorkflowNotifications({
       });
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Auto-compliance trigger
+// ---------------------------------------------------------------------------
+async function triggerAutoComplianceCheck(
+  admin: SupabaseClient<Database>,
+  docId: string,
+  actorId: string,
+): Promise<void> {
+  // Get the latest document version
+  const { data: version } = await admin
+    .from("document_versions")
+    .select("id")
+    .eq("document_id", docId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!version) return;
+
+  // Skip if a non-failed check already exists for this version
+  const { data: existing } = await admin
+    .from("compliance_checks")
+    .select("id")
+    .eq("document_version_id", version.id)
+    .in("status", ["pending", "running", "complete"])
+    .maybeSingle();
+
+  if (existing) return;
+
+  // Get actor's language preference for AI output
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("language")
+    .eq("id", actorId)
+    .single();
+  const language: "no" | "en" = profile?.language === "en" ? "en" : "no";
+
+  // Create the pending compliance check record
+  const { data: check, error } = await admin
+    .from("compliance_checks")
+    .insert({ document_version_id: version.id, status: "pending" })
+    .select("id")
+    .single();
+
+  if (error || !check) {
+    console.error("Auto-compliance check insert error:", error);
+    return;
+  }
+
+  console.log("Auto-compliance check started:", { checkId: check.id, docId });
+  await runComplianceCheck(check.id, language);
 }
