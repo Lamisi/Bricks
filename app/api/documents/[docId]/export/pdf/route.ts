@@ -9,6 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ docId: string }> },
 ) {
   const { docId } = await params;
+  const { searchParams } = new URL(request.url);
+  const versionId = searchParams.get("versionId");
 
   const supabase = await createClient();
   const {
@@ -18,10 +20,10 @@ export async function GET(
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Fetch document (RLS enforces project membership)
+  // Fetch document + project name (RLS enforces project membership)
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, title, status, project_id")
+    .select("id, title, status, project_id, projects(name)")
     .eq("id", docId)
     .single();
 
@@ -30,16 +32,24 @@ export async function GET(
   const role = await getUserProjectRole(supabase, doc.project_id);
   if (!role) return new NextResponse("Forbidden", { status: 403 });
 
-  // Fetch the current rich_text version
+  const projectName =
+    (Array.isArray(doc.projects) ? doc.projects[0]?.name : (doc.projects as { name: string } | null)?.name) ?? "";
+
+  // Fetch the requested version (or latest rich_text version as fallback)
   const admin = createAdminClient();
-  const { data: version } = await admin
+  let versionQuery = admin
     .from("document_versions")
-    .select("rich_text_json, version_number, created_at")
+    .select("id, rich_text_json, version_number, created_at")
     .eq("document_id", docId)
-    .eq("content_type", "rich_text")
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .eq("content_type", "rich_text");
+
+  if (versionId) {
+    versionQuery = versionQuery.eq("id", versionId);
+  } else {
+    versionQuery = versionQuery.order("version_number", { ascending: false }).limit(1);
+  }
+
+  const { data: version } = await versionQuery.maybeSingle();
 
   if (!version?.rich_text_json) {
     return new NextResponse("No rich-text content found.", { status: 404 });
@@ -52,16 +62,23 @@ export async function GET(
     year: "numeric",
   });
 
+  // Build a filename-friendly title for the browser's "Save as PDF" dialog
+  const slug = (s: string) => s.replace(/[^a-zA-Z0-9\u00C0-\u024F]+/g, "_").replace(/^_+|_+$/g, "");
+  const pageTitle = [slug(projectName), slug(doc.title), `v${version.version_number}`]
+    .filter(Boolean)
+    .join("_");
+
   console.log("PDF export:", { documentId: docId, versionNumber: version.version_number, userId: user.id });
 
   // Return a server-rendered HTML page with print styles.
-  // The user opens this in a new tab and uses the browser's Print → Save as PDF.
+  // The browser auto-triggers the print dialog (window.print on load);
+  // the user saves it as PDF. The <title> becomes the suggested filename.
   const page = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(doc.title)}</title>
+  <title>${escapeHtml(pageTitle)}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body {
@@ -74,7 +91,8 @@ export async function GET(
       max-width: 900px;
     }
     header { border-bottom: 2px solid #0F2D5E; padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
-    header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.2rem; color: #0F2D5E; }
+    header .project { font-size: 0.75rem; font-weight: 600; color: #0F2D5E; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.2rem; }
+    header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.2rem; color: #1a1a1a; }
     header p  { font-size: 0.8rem; color: #666; margin: 0; }
     h1 { font-size: 1.4rem; font-weight: 700; margin: 1.2rem 0 0.4rem; }
     h2 { font-size: 1.15rem; font-weight: 600; margin: 1rem 0 0.35rem; }
@@ -100,6 +118,7 @@ export async function GET(
 </head>
 <body>
   <header>
+    ${projectName ? `<p class="project">${escapeHtml(projectName)}</p>` : ""}
     <h1>${escapeHtml(doc.title)}</h1>
     <p>Version ${version.version_number} &middot; ${date} &middot; Status: ${escapeHtml(doc.status)}</p>
   </header>

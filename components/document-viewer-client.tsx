@@ -158,7 +158,7 @@ export function DocumentViewerClient({
 
   function openPdfExport() {
     window.open(
-      `/api/documents/${document.id}/export/pdf`,
+      `/api/documents/${document.id}/export/pdf?versionId=${encodeURIComponent(selectedVersionId)}`,
       "_blank",
       "noopener,noreferrer",
     );
@@ -191,12 +191,14 @@ export function DocumentViewerClient({
         </div>
 
         <div className="flex items-center gap-2">
+          {isRichText && (
+            <Button variant="ghost" size="sm" onClick={openPdfExport}>
+              <FileDown className="h-4 w-4 mr-1.5" />
+              Export PDF
+            </Button>
+          )}
           {canEdit && isRichText && document.status !== "approved" && (
             <>
-              <Button variant="ghost" size="sm" onClick={openPdfExport}>
-                <FileDown className="h-4 w-4 mr-1.5" />
-                Export PDF
-              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/app/projects/${projectId}/documents/${document.id}/edit?suggestions=1`}>
                   <Sparkles className="h-4 w-4 mr-1.5" />
@@ -210,12 +212,6 @@ export function DocumentViewerClient({
                 </Link>
               </Button>
             </>
-          )}
-          {canEdit && isRichText && document.status === "approved" && (
-            <Button variant="ghost" size="sm" onClick={openPdfExport}>
-              <FileDown className="h-4 w-4 mr-1.5" />
-              Export PDF
-            </Button>
           )}
           {!isRichText && selectedVersion.storage_path && (
             <Button variant="outline" size="sm" onClick={download}>
