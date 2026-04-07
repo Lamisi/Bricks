@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { matchDocuments } from "@/lib/ai/rag";
 import { getClaudeModel, DEFAULT_MODEL } from "@/lib/ai/claude";
 import { notify } from "@/lib/notifications/notify";
+import { sendComplianceCompleteEmail } from "@/lib/email/resend";
 import type { Json } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -213,6 +214,7 @@ export async function runComplianceCheck(
     const docId = version.documents?.id;
     const projectId = version.documents?.project_id;
     if (docOwner && docId && projectId) {
+      const complianceLink = `/app/projects/${projectId}/documents/${docId}`;
       void notify({
         userId: docOwner,
         type: "compliance_complete",
@@ -221,10 +223,24 @@ export async function runComplianceCheck(
           object.issues.length === 0
             ? "No compliance issues found."
             : `${object.issues.length} issue${object.issues.length === 1 ? "" : "s"} found.`,
-        link: `/app/projects/${projectId}/documents/${docId}`,
+        link: complianceLink,
       }).catch((err) => {
         console.error("Compliance notification error:", err);
       });
+
+      // Fire compliance email to doc owner
+      const { data: ownerUser } = await admin.auth.admin.getUserById(docOwner);
+      const ownerEmail = ownerUser.user?.email;
+      if (ownerEmail) {
+        void sendComplianceCompleteEmail({
+          to: ownerEmail,
+          docTitle,
+          issueCount: object.issues.length,
+          docLink: complianceLink,
+        }).catch((err) => {
+          console.error("Compliance email send failed:", err);
+        });
+      }
     }
   } catch (err) {
     const duration = Date.now() - startTime;

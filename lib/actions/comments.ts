@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserProjectRole } from "@/lib/auth/rbac";
 import { notify, notifyMany } from "@/lib/notifications/notify";
+import { sendCommentEmail, sendMentionEmail } from "@/lib/email/resend";
 
 /** Strip HTML tags and trim whitespace — comments are stored as plain text. */
 function sanitizeBody(input: string): string {
@@ -51,10 +52,11 @@ export async function postComment(
   // Fetch author name + doc owner once for all notifications below
   const [authorResult, docResult] = await Promise.all([
     admin.from("profiles").select("full_name").eq("id", user.id).single(),
-    admin.from("documents").select("created_by").eq("id", docId).single(),
+    admin.from("documents").select("created_by, title").eq("id", docId).single(),
   ]);
   const authorName = authorResult.data?.full_name ?? "Someone";
   const docOwnerId = docResult.data?.created_by ?? null;
+  const docTitle = docResult.data?.title ?? "a document";
 
   // ── @mention detection ──────────────────────────────────────────────────
   // Match @Word patterns (single token) against project members' first names.
@@ -88,6 +90,29 @@ export async function postComment(
           link: `/app/projects/${projectId}/documents/${docId}`,
         })),
       );
+
+      // Fire mention emails
+      const mentionEmailLookups = await Promise.all(
+        mentionedIds.map(async (userId) => {
+          const { data } = await admin.auth.admin.getUserById(userId);
+          return data.user?.email ?? null;
+        }),
+      );
+      void Promise.all(
+        mentionEmailLookups
+          .filter((email): email is string => email !== null)
+          .map((email) =>
+            sendMentionEmail({
+              to: email,
+              authorName,
+              docTitle,
+              commentBody: clean.slice(0, 200),
+              docLink: `/app/projects/${projectId}/documents/${docId}`,
+            }).catch((err) => {
+              console.error("Mention email send failed:", err);
+            }),
+          ),
+      );
     }
   }
 
@@ -100,6 +125,21 @@ export async function postComment(
       body: `${authorName}: ${clean.slice(0, 100)}`,
       link: `/app/projects/${projectId}/documents/${docId}`,
     });
+
+    // Fire comment email to doc owner
+    const { data: ownerUser } = await admin.auth.admin.getUserById(docOwnerId);
+    const ownerEmail = ownerUser.user?.email;
+    if (ownerEmail) {
+      void sendCommentEmail({
+        to: ownerEmail,
+        authorName,
+        docTitle,
+        commentBody: clean.slice(0, 200),
+        docLink: `/app/projects/${projectId}/documents/${docId}`,
+      }).catch((err) => {
+        console.error("Comment email send failed:", err);
+      });
+    }
   }
 
   revalidatePath(`/app/projects/${projectId}/documents/${docId}`);
