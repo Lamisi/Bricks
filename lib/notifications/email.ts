@@ -39,10 +39,10 @@ export async function sendNotificationEmail(payload: EmailPayload): Promise<void
 
   const admin = createAdminClient();
 
-  // Fetch user email + preferences in one query
+  // Fetch notification preferences for the opt-out check
   const { data: profile } = await admin
     .from("profiles")
-    .select("email_prefs, auth_users:id(email)")
+    .select("email_prefs")
     .eq("id", payload.userId)
     .single();
 
