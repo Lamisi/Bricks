@@ -22,19 +22,53 @@ function ipv4ToInt(ip: string): number {
 
 function isPrivateIpv4(ip: string): boolean {
   const n = ipv4ToInt(ip);
-  return PRIVATE_RANGES.some(([net, mask]) => (n & mask) === net);
+  // Use >>> 0 on both sides: JS bitwise & returns a signed 32-bit int, but
+  // net constants like 0xc0a80000 are stored as positive doubles — without
+  // the unsigned-right-shift the comparison fails for all IPs >= 128.0.0.0.
+  return PRIVATE_RANGES.some(([net, mask]) => ((n & mask) >>> 0) === (net >>> 0));
 }
 
 function isPrivateIpv6(ip: string): boolean {
   // Normalised lowercase check for common reserved IPv6
   const lower = ip.toLowerCase().replace(/^\[/, "").replace(/\]$/, "");
-  return (
+
+  if (
     lower === "::1" ||
     lower.startsWith("fc") ||
     lower.startsWith("fd") ||
     lower.startsWith("fe80:") ||
     lower === "::"
-  );
+  ) {
+    return true;
+  }
+
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d or ::ffff:xxyy:zzww) — e.g. ::ffff:127.0.0.1
+  if (lower.startsWith("::ffff:")) {
+    const rest = lower.slice("::ffff:".length);
+
+    // Dotted-decimal form: ::ffff:127.0.0.1
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(rest)) {
+      return isPrivateIpv4(rest);
+    }
+
+    // Hex-group form: ::ffff:7f00:1  (each group is 16 bits)
+    const parts = rest.split(":");
+    if (parts.length === 2) {
+      const high = parseInt(parts[0], 16);
+      const low = parseInt(parts[1], 16);
+      if (!isNaN(high) && !isNaN(low)) {
+        const synthetic = [
+          (high >> 8) & 0xff,
+          high & 0xff,
+          (low >> 8) & 0xff,
+          low & 0xff,
+        ].join(".");
+        return isPrivateIpv4(synthetic);
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
