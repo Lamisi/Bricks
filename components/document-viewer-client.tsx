@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import DOMPurify from "dompurify";
 import {
@@ -309,13 +310,21 @@ export function DocumentViewerClient({
               />
             ) : isImage && content?.type === "file" && content.url ? (
               <div className="flex items-start justify-center p-6 min-h-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   key={content.url}
                   src={content.url}
                   alt={document.title}
-                  style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
-                  className="max-w-full transition-transform duration-150"
+                  width={0}
+                  height={0}
+                  sizes="100vw"
+                  style={{
+                    width: "auto",
+                    height: "auto",
+                    maxWidth: "100%",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                  }}
+                  className="transition-transform duration-150"
                 />
               </div>
             ) : (
