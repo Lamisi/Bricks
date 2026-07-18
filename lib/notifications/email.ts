@@ -40,14 +40,18 @@ export async function sendNotificationEmail(payload: EmailPayload): Promise<void
   const admin = createAdminClient();
 
   // Fetch user email + preferences in one query
-  const { data: profile } = await (admin as any)
+  const { data: profile } = await admin
     .from("profiles")
     .select("email_prefs, auth_users:id(email)")
     .eq("id", payload.userId)
     .single();
 
-  // Check opt-out preference
-  const prefs: Record<string, boolean> = profile?.email_prefs ?? {};
+  // Check opt-out preference — email_prefs is Json in the schema so narrow at runtime
+  const rawPrefs = profile?.email_prefs;
+  const prefs: Record<string, boolean> =
+    rawPrefs !== null && typeof rawPrefs === "object" && !Array.isArray(rawPrefs)
+      ? (rawPrefs as Record<string, boolean>)
+      : {};
   if (prefs[payload.type] === false) return;
 
   // Get user email from auth.users via admin API

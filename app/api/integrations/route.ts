@@ -19,7 +19,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const admin = createAdminClient();
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from("integrations")
     .select("id, name, type, webhook_url, status, created_at")
     .eq("project_id", projectId)

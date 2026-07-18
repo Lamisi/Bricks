@@ -23,7 +23,7 @@ export async function GET(
   if (!role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const admin = createAdminClient();
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from("integrations_log")
     .select(
       "id, direction, event_type, status, http_status_code, destination_url, attempt, error, created_at",

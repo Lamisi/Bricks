@@ -37,7 +37,7 @@ export async function createIntegration(
   const encrypted = encryptSecret(secret);
   const admin = createAdminClient();
 
-  const { error } = await (admin as any).from("integrations").insert({
+  const { error } = await admin.from("integrations").insert({
     project_id: projectId,
     name: name.trim(),
     type: "webhook_outbound",
@@ -66,7 +66,7 @@ export async function deleteIntegration(
   if (role !== "admin") return { error: "Only project admins can manage integrations" };
 
   const admin = createAdminClient();
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from("integrations")
     .delete()
     .eq("id", integrationId)
@@ -93,7 +93,7 @@ export async function toggleIntegrationStatus(
   if (role !== "admin") return { error: "Only project admins can manage integrations" };
 
   const admin = createAdminClient();
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from("integrations")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", integrationId)

@@ -459,6 +459,32 @@ export type Database = {
           },
         ]
       }
+      doc_embeddings: {
+        Row: {
+          document_id: string
+          embedding: string | null
+          updated_at: string
+        }
+        Insert: {
+          document_id: string
+          embedding?: string | null
+          updated_at?: string
+        }
+        Update: {
+          document_id?: string
+          embedding?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_embeddings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embeddings: {
         Row: {
           chunk_index: number
