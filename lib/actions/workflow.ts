@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -103,9 +104,11 @@ export async function transitionDocumentStatus(
 
   // Auto-trigger compliance check when submitted for review
   if (newStatus === "in_review") {
-    void triggerAutoComplianceCheck(admin, docId, user.id).catch((err) => {
-      console.error("Auto-compliance trigger failed:", err);
-    });
+    after(() =>
+      triggerAutoComplianceCheck(admin, docId, user.id).catch((err) => {
+        console.error("Auto-compliance trigger failed:", err);
+      }),
+    );
   }
 
   // Non-blocking notifications
