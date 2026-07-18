@@ -22,7 +22,7 @@ export async function embedDocument(documentId: string, title: string, descripti
   }
 
   const admin = createAdminClient();
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from("doc_embeddings")
     .upsert(
       { document_id: documentId, embedding: JSON.stringify(embedding), updated_at: new Date().toISOString() },

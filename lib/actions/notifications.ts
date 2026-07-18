@@ -55,7 +55,7 @@ export async function updateEmailPrefs(
   );
 
   const admin = createAdminClient();
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from("profiles")
     .update({ email_prefs: sanitised, updated_at: new Date().toISOString() })
     .eq("id", user.id);

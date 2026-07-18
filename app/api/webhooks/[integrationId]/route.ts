@@ -19,7 +19,7 @@ export async function POST(
 
   const admin = createAdminClient();
 
-  const { data: integration } = await (admin as any)
+  const { data: integration } = await admin
     .from("integrations")
     .select("id, project_id, webhook_secret_enc, status")
     .eq("id", integrationId)
@@ -83,7 +83,7 @@ async function logInbound(
     error: string | null;
   },
 ): Promise<void> {
-  const { error } = await (admin as any).from("integrations_log").insert({
+  const { error } = await admin.from("integrations_log").insert({
     integration_id: entry.integrationId,
     project_id: entry.projectId,
     direction: "inbound",

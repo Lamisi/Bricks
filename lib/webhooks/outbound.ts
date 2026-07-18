@@ -135,7 +135,7 @@ async function logDelivery(
     error: string | null;
   },
 ): Promise<void> {
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from("integrations_log")
     .insert({
       integration_id: entry.integrationId,
